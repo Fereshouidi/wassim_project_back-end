@@ -5,7 +5,7 @@ import productRoute from './routes/product.js';
 import CollectionRoute from './routes/collection.js';
 import PubRoute from './routes/pub.js'
 
-const port = 3001;
+const port = process.env || 3001;
 
 const app = express();
 

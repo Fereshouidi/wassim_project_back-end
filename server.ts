@@ -9,7 +9,11 @@ const port = process.env.PORT || 3001;
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  credentials: true,
+}));
+
 app.use(json());
 app.use("/api", productRoute);
 app.use("/api", CollectionRoute);
@@ -17,7 +21,11 @@ app.use("/api", PubRoute);
 
 conn();
 
-
+app.get("/", (req, res) => {
+  res.send("Server is working!");
+  console.log("Server is working!");
+  
+});
 
 
 app.listen( port, () => {

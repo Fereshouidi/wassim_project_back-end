@@ -5,7 +5,7 @@ import productRoute from './routes/product.js';
 import CollectionRoute from './routes/collection.js';
 import PubRoute from './routes/pub.js'
 
-const port = process.env || 3001;
+const port = process.env.PORT || 3001;
 
 const app = express();
 
@@ -16,6 +16,8 @@ app.use("/api", CollectionRoute);
 app.use("/api", PubRoute);
 
 conn();
+
+
 
 
 app.listen( port, () => {

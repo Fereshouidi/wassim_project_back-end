@@ -18,6 +18,10 @@ const collectionSchema = new mongoose.Schema(
         type: String,
         enum: ["private", "public"],
         default: "private"
+    },
+    display: {
+        type: String,
+        enum: ["vertical", "horizontal"]
     }
   },
   {

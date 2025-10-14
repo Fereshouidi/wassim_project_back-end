@@ -29,11 +29,16 @@ export const getHomeCollections = async () => {
 
         const ownerInfo = await getOwnerInfo();
         
-        const collections = await Collection.find({ _id: { $in: [ownerInfo?.homeCollections] } });
+        const collections = await Collection.find({ _id: { $in: ownerInfo?.homeCollections } })
 
-        return collections;
+        const orderedCollections = ownerInfo.homeCollections.map(
+            id => collections.find(col => col._id.toString() === id.toString())
+        )
+
+        return orderedCollections;
         
     } catch (err) {
+        console.log("bech : " + err)
         throw err;
     }
 

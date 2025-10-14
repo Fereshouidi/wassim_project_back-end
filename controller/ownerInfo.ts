@@ -32,7 +32,7 @@ export const getOwnerInfo = async () => {
 
     try {
 
-        let ownerInfo = await OwnerInfo.findOne();
+        let ownerInfo = await OwnerInfo.findOne() 
 
         if (!ownerInfo) {
             ownerInfo = await addOwnerInfo({});

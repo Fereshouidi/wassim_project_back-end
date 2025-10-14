@@ -54,7 +54,8 @@ export interface ProductType {
 }
 
 export interface CollectionType {
-    _id?: string | ObjectId;
+    _id?: ObjectId | string;
     name: language,
     type: "private" | "public"
+    display: "vertical" | "horizontal"
 }

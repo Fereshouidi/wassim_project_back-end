@@ -1,5 +1,5 @@
 import express from 'express';
-import { CollectionType } from '../types/index.js';
+import { CollectionType, ProductType } from '../types/index.js';
 import Collection from '../models/collection.js';
 import { addCollection, getHomeCollections } from '../controller/collection.js';
 import { getProductsByCollection } from '../controller/product.js';
@@ -42,8 +42,10 @@ export const getHomeCollectionsWithProducts_ = async (req: express.Request, res:
 
             homeCollections.map(async (collection) => {
 
+                if (!collection) return;
+
                 const products = await getProductsByCollection(collection._id.toString(), 20, 0);
-                return { ...collection.toObject(), products };
+                return { ...collection?.toObject(), products };
 
             })
 

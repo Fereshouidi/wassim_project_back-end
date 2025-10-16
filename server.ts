@@ -15,6 +15,7 @@ app.use(cors({
   credentials: true,
 }));
 
+
 app.use(json());
 app.use("/api", productRoute);
 app.use("/api", CollectionRoute);

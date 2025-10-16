@@ -14,6 +14,9 @@ const collectionSchema = new mongoose.Schema(
             trim: true,
         },
     },
+    thumbNail: {
+      type: String
+    },
     type: {
         type: String,
         enum: ["private", "public"],

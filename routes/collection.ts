@@ -1,5 +1,5 @@
 import express from 'express';
-import { addCollection_, getHomeCollections_, getHomeCollectionsWithProducts_ } from '../midCondroller/collection.js';
+import { addCollection_, getHomeCollections_, getHomeCollectionsWithProducts_, getPublicCollections_ } from '../midCondroller/collection.js';
 const router = express.Router();
 
 
@@ -14,6 +14,12 @@ router.get('/getHomeCollectionsWithProducts', async (req, res) => {
 router.get('/homeCollections', async (req, res) => {
     await getHomeCollections_(req, res);
 })
+
+router.get('/getPublicCollections', async (req, res) => {
+    await getPublicCollections_(req, res);
+})
+
+
 
 
 

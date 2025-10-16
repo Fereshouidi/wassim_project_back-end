@@ -43,3 +43,18 @@ export const getHomeCollections = async () => {
     }
 
 }
+
+export const getPublicCollections = async () => {
+
+    try {
+
+        const collections = await Collection.find({type: "public"});
+
+        return collections;
+        
+    } catch (err) {
+        console.log("bech : " + err)
+        throw err;
+    }
+
+}

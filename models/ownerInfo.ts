@@ -27,6 +27,10 @@ const ownerInfoSchema = new mongoose.Schema({
     homeCollections: {
         type: [ mongoose.Schema.Types.ObjectId ],
         ref: "Collection"
+    },
+    topCollections: {
+        type: [ mongoose.Schema.Types.ObjectId ],
+        ref: "Collection"
     }
 
 }, {

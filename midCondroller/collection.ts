@@ -1,7 +1,7 @@
 import express from 'express';
 import { CollectionType, ProductType } from '../types/index.js';
 import Collection from '../models/collection.js';
-import { addCollection, getHomeCollections, getPublicCollections } from '../controller/collection.js';
+import { addCollection, getHomeCollections, getPublicCollections, getTopCollections } from '../controller/collection.js';
 import { getProductsByCollection } from '../controller/product.js';
 
 
@@ -75,6 +75,28 @@ export const getHomeCollections_ = async (req: express.Request, res: express.Res
 
         res.status(201).json({
             homeCollections
+        })
+
+    } catch (err: any) {
+        console.log({err});
+
+        if (err.message.includes("Missing required fields")) {
+            return res.status(400).json({ message: err.message });
+        }
+
+        res.status(500).json({message: err.message});
+    }
+
+}
+
+export const getTopCollections_ = async (req: express.Request, res: express.Response) => {
+
+    try {
+        
+        const topCollections = await getTopCollections();
+
+        res.status(201).json({
+            topCollections
         })
 
     } catch (err: any) {

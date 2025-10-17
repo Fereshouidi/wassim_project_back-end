@@ -44,6 +44,27 @@ export const getHomeCollections = async () => {
 
 }
 
+export const getTopCollections = async () => {
+
+    try {
+
+        const ownerInfo = await getOwnerInfo();
+        
+        const collections = await Collection.find({ _id: { $in: ownerInfo?.topCollections } })
+
+        const orderedCollections = ownerInfo.topCollections.map(
+            id => collections.find(col => col._id.toString() === id.toString())
+        )
+
+        return orderedCollections;
+        
+    } catch (err) {
+        console.log("bech : " + err)
+        throw err;
+    }
+
+}
+
 export const getPublicCollections = async () => {
 
     try {

@@ -82,3 +82,39 @@ export const getProductsCountByCollection = async (collectionId: string) => {
     throw err;
   }
 };
+
+export const getProductsBySearch = async (
+    searchText: string, 
+    limit: number, 
+    skip: number
+) => {
+    
+    try {
+        const text = searchText.trim();
+
+        const searchQuery = text
+            ? {
+                  $or: [
+                      { "name.fr": { $regex: text, $options: "i" } },
+                      { "name.en": { $regex: text, $options: "i" } },
+                      { "description.fr": { $regex: text, $options: "i" } },
+                      { "description.en": { $regex: text, $options: "i" } },
+                  ],
+              }
+            : {};
+
+        const products = await Product.find(searchQuery)
+            .limit(limit)
+            .skip(skip);
+
+        const productsCount = await Product.countDocuments(searchQuery);
+
+        return {
+            products,
+            productsCount
+        };
+
+    } catch (err) {
+        throw err;
+    }
+};

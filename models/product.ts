@@ -50,11 +50,28 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    colorsDispo: {
-      type: [ String ]
-    },
-    sizesDispo: {
-      type: [ String ]
+    colorsDispo: [
+      {
+        color: {
+          type: String
+        },
+        quantity: {
+          type: Number
+        }
+      }
+    ],
+    sizeDispo: [
+      {
+        size: {
+          type: String
+        },
+        quantity: {
+          type: Number
+        }
+      }
+    ],
+    availability: {
+      type: Boolean
     }
   },
   {

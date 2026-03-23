@@ -5,10 +5,11 @@ import Product from '../models/product.js';
 import { FilterQuery, ObjectId } from 'mongoose';
 import { SortOrder } from 'mongoose';
 import { addSpecification } from './specification.js';
-import { uploadProductImages } from '../lib/cloudinary.js';
+import { deleteCloudinaryImages, uploadProductImages } from '../lib/cloudinary.js';
 import { Types } from 'mongoose'; // 1. Import Types
 import Purchase from '../models/purchase.js';
 import Like from '../models/like.js';
+import Evaluation from '../models/evaluation.js';
 
 export const addProduct = async (productData: ProductType) => {
   try {
@@ -425,16 +426,90 @@ export const updateProduct = async (updatedData: ProductType) => {
   }
 };
 
-export const deleteProducts = async (productIds: string[], status: ProductStatus = "deleted") => {
+export const deleteProducts = async (productIds: string[]) => {
   try {
     if (!productIds || productIds.length === 0) {
       throw new Error("Product IDs list is required and cannot be empty");
     }
 
-    const result = await Product.updateMany(
-      { _id: { $in: productIds } },
-      { $set: { status: status } }
-    );
+    // 1. Fetch products to get image URLs and specification IDs
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    if (products.length === 0) return { deletedCount: 0 };
+
+    const specIdsSet = new Set<string>();
+    const imageUrlsSet = new Set<string>();
+
+    products.forEach((p: any) => {
+      // Collect specifications from the product's specifications array
+      if (p.specifications && Array.isArray(p.specifications)) {
+        p.specifications.forEach((id: any) => specIdsSet.add(id.toString()));
+      }
+
+      // Collect specifications from the images array (some images have specific specs)
+      if (p.images && Array.isArray(p.images)) {
+        p.images.forEach((img: any) => {
+          if (img.specification) specIdsSet.add(img.specification.toString());
+          if (img.uri) imageUrlsSet.add(img.uri);
+        });
+      }
+
+      // Collect thumbnail URL
+      if (p.thumbNail) imageUrlsSet.add(p.thumbNail);
+    });
+
+    const specIds = Array.from(specIdsSet);
+    const imageUrls = Array.from(imageUrlsSet);
+
+    // 2. Fetch and Freeze Purchases
+    // We update purchases associated with these products to keep their details
+    const relatedPurchases = await Purchase.find({ 
+      product: { $in: productIds },
+      status: { $in: ["ordered", "delivered"] }
+    }).lean();
+
+    if (relatedPurchases.length > 0) {
+      const specs = await Specification.find({ _id: { $in: specIds } }).lean();
+      
+      for (const purchase of relatedPurchases) {
+        const product = products.find(p => p._id.toString() === purchase.product?.toString());
+        const spec = specs.find(s => s._id.toString() === purchase.specification?.toString());
+
+        await Purchase.findByIdAndUpdate(purchase._id, {
+          $set: {
+            productName: (product as any)?.name || null,
+            productThumb: (product as any)?.thumbNail || (product as any)?.images?.[0] || null,
+            specPrice: (spec as any)?.price || 0,
+            specColor: (spec as any)?.color || null,
+            specSize: (spec as any)?.size || null,
+            productId: purchase.product?.toString()
+          }
+        });
+      }
+    }
+
+    // 3. Delete images from Cloudinary
+    if (imageUrls.length > 0) {
+      await deleteCloudinaryImages(imageUrls);
+    }
+
+    // 4. Delete specifications from DB
+    if (specIds.length > 0) {
+      await Specification.deleteMany({ _id: { $in: specIds } });
+    }
+
+    // 5. Delete associated data (Likes, Evaluations, Transient Purchases)
+    // viewed and inCart purchases are deleted because the client can no longer buy them
+    await Promise.all([
+      Like.deleteMany({ product: { $in: productIds } }),
+      Evaluation.deleteMany({ product: { $in: productIds } }),
+      Purchase.deleteMany({
+        product: { $in: productIds },
+        status: { $in: ["viewed", "inCart"] }
+      })
+    ]);
+
+    // 6. Delete products from DB
+    const result = await Product.deleteMany({ _id: { $in: productIds } });
 
     return result;
   } catch (err: any) {

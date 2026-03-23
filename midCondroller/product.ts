@@ -6,7 +6,7 @@ import { handleProductImagesUpload } from '../lib/multer.js';
 import { getLikesByClient } from '../controller/like.js';
 import { addSpecification } from '../controller/specification.js';
 import Specification from '../models/specification.js';
-import { translate } from 'google-translate-api-x';
+import Like from '../models/like.js';
 
 const safeParseStatus = (status: any): ProductStatus[] => {
   if (!status) return ["active"];
@@ -108,21 +108,9 @@ export const addProduct_ = async (req: express.Request, res: express.Response) =
       }];
     }
 
-    // 4. Translations (French -> English)
+    // 4. Name & Description (Direct use of French for English)
     let nameEn = req.body.nameFr;
     let descriptionEn = req.body.descriptionFr || "";
-
-    try {
-      if (req.body.nameFr) {
-        const resName = await translate(req.body.nameFr, { from: 'fr', to: 'en' }) as any;
-        nameEn = resName.text;
-      }
-      if (req.body.descriptionFr) {
-        const resDesc = await translate(req.body.descriptionFr, { from: 'fr', to: 'en' }) as any;
-        descriptionEn = resDesc.text;
-      }
-    } catch (e) {
-    }
 
     // 5. Final Product Object Construction
     const productData = {
@@ -205,8 +193,13 @@ export const getFavoriteProductsByClient_ = async (req: express.Request, res: ex
     for (const like of likes) {
       if (!like.product) continue;
 
-      const product = await getProductById(like?.product as unknown as string, "active" as unknown as ProductStatus[]) as unknown as ProductType;
-      products.push(product);
+      try {
+        const product = await getProductById(like?.product as unknown as string, ["active", "archived"] as unknown as ProductStatus[]) as unknown as ProductType;
+        if (product) products.push(product);
+      } catch (err) {
+        // If product not found, delete the orphaned like
+        await Like.findOneAndDelete({ _id: like._id });
+      }
     }
 
     res.status(201).json({
@@ -365,20 +358,10 @@ export const updateProduct_ = async (req: express.Request, res: express.Response
   try {
     const { _id, nameFr, price, oldPrice, descriptionFr } = req.body;
 
-    // --- 1. Automated Translation Logic ---
-    // Translating from French (fr) to English (en)
-    let nameEn = req.body.nameEn;
-    let descriptionEn = req.body.descriptionEn;
-
-    if (!nameEn && nameFr) {
-      const translation = await translate(nameFr, { from: 'fr', to: 'en' }) as any;
-      nameEn = translation.text;
-    }
-
-    if (!descriptionEn && descriptionFr) {
-      const translation = await translate(descriptionFr, { from: 'fr', to: 'en' }) as any;
-      descriptionEn = translation.text;
-    }
+    // --- 1. Name & Description Logic ---
+    // Using French name/description for English fields
+    const nameEn = nameFr;
+    const descriptionEn = descriptionFr || "";
 
     // --- 2. Specifications Handling ---
     const incomingSpecs = req.body.specifications ? JSON.parse(req.body.specifications) : [];
@@ -480,7 +463,7 @@ export const updateProduct_ = async (req: express.Request, res: express.Response
 
 export const deleteProducts_ = async (req: express.Request, res: express.Response) => {
   try {
-    const { ids, status } = req.body; // Extract status from body
+    const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({
@@ -488,16 +471,15 @@ export const deleteProducts_ = async (req: express.Request, res: express.Respons
       });
     }
 
-    // Pass ids and status (if present) to the function
-    const result = await deleteProducts(ids, status);
+    const result = await deleteProducts(ids);
 
     return res.status(200).json({
-      message: `Successfully updated ${result.modifiedCount} products status. ✅`,
+      message: `Successfully deleted ${result.deletedCount || 0} products and their associated assets. ✅`,
       details: result
     });
   } catch (err: any) {
     return res.status(500).json({
-      message: "Failed to update products status",
+      message: "Failed to delete products",
       error: err.message
     });
   }

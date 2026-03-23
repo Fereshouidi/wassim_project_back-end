@@ -273,8 +273,42 @@ export const deleteOrderById = async (orderId?: string) => {
     }
 }
 
+import Specification from "../models/specification.js";
+
 export const updateOrderStatus = async (orderId?: string, newStatus?: string) => {
     try {
+        const currentOrder = await Order.findById(orderId).populate({
+            path: 'purchases',
+            populate: { path: 'specification' }
+        });
+
+        if (!currentOrder) return null;
+
+        const oldStatus = currentOrder.status;
+
+        // Stock Reversion Logic
+        if (newStatus === "failed" && oldStatus !== "failed") {
+            // Revert stock (add back)
+            for (const purchase of ((currentOrder as any).purchases as any[])) {
+                if (purchase?.specification && !purchase.specification.unlimited) {
+                    await Specification.findByIdAndUpdate(
+                        purchase.specification._id,
+                        { $inc: { quantity: purchase.quantity || 0 } }
+                    );
+                }
+            }
+        } else if (oldStatus === "failed" && newStatus !== "failed") {
+            // Re-deduct stock
+            for (const purchase of ((currentOrder as any).purchases as any[])) {
+                if (purchase?.specification && !purchase.specification.unlimited) {
+                    await Specification.findByIdAndUpdate(
+                        purchase.specification._id,
+                        { $inc: { quantity: -(purchase.quantity || 0) } }
+                    );
+                }
+            }
+        }
+
         const updatedOrder = await Order.findByIdAndUpdate(
             orderId,
             { status: newStatus },

@@ -2,12 +2,34 @@ import Purchase from "../models/purchase.js";
 import { PurchaseType } from "../types/index.js";
 import Specification from '../models/specification.js';
 import { createNotification } from "./notification.js";
+import Product from "../models/product.js";
 
 
 export const addPurchase = async (purchaseData: PurchaseType) => {
 
     try {
-        const newPurchase = new Purchase(purchaseData);
+        // Fetch product and specification to save static details
+        const spec = await Specification.findById(purchaseData.specification);
+        const prod = await Product.findById(purchaseData.product);
+
+        const newPurchase = new Purchase({
+            ...purchaseData,
+            productId: purchaseData.product?.toString(),
+            productName: (prod as any)?.name || null,
+            productThumb: (prod as any)?.thumbNail || null,
+            specPrice: (spec as any)?.price || 0,
+            specColor: (spec as any)?.color || null,
+            specSize: (spec as any)?.size || null
+        });
+
+        // Stock Reservation Logic (for direct Add to Cart)
+        if (purchaseData.status === "inCart" && spec && !spec.unlimited) {
+            await Specification.findByIdAndUpdate(
+                spec._id,
+                { $inc: { quantity: -(purchaseData.quantity || 1) } }
+            );
+        }
+
         await newPurchase.save();
 
         const populatedPurchase = await Purchase.findOne({ _id: newPurchase._id })
@@ -41,6 +63,40 @@ export const addPurchase = async (purchaseData: PurchaseType) => {
 export const updatePurchase = async (updatedData: PurchaseType) => {
 
     try {
+        const oldPurchase = await Purchase.findById(updatedData._id).populate('specification').lean();
+        if (!oldPurchase) throw new Error("Purchase not found");
+
+        const oldStatus = oldPurchase.status;
+        const newStatus = updatedData.status;
+
+        // Stock Management (Reservation)
+        if (newStatus === "inCart" && oldStatus !== "inCart") {
+            // Check for specification and decrement stock
+            if (oldPurchase.specification && !(oldPurchase.specification as any).unlimited) {
+                await Specification.findByIdAndUpdate(
+                    (oldPurchase.specification as any)._id,
+                    { $inc: { quantity: -(updatedData.quantity || oldPurchase.quantity || 1) } }
+                );
+            }
+        } else if (oldStatus === "inCart" && newStatus !== "inCart" && newStatus !== "ordered") {
+            // Return stock (removed from cart, but NOT if it was ordered which handled elsewhere)
+            if (oldPurchase.specification && !(oldPurchase.specification as any).unlimited) {
+                await Specification.findByIdAndUpdate(
+                    (oldPurchase.specification as any)._id,
+                    { $inc: { quantity: oldPurchase.quantity || 1 } }
+                );
+            }
+        } else if (oldStatus === "inCart" && newStatus === "inCart" && updatedData.quantity !== undefined && updatedData.quantity !== oldPurchase.quantity) {
+            // Adjust stock for quantity change in cart
+            if (oldPurchase.specification && !(oldPurchase.specification as any).unlimited) {
+                const diff = (updatedData.quantity || 1) - (oldPurchase.quantity || 1);
+                await Specification.findByIdAndUpdate(
+                    (oldPurchase.specification as any)._id,
+                    { $inc: { quantity: -diff } }
+                );
+            }
+        }
+
         const updatedPurchase = await Purchase.findOneAndUpdate(
             { _id: updatedData._id },
             updatedData,
@@ -64,7 +120,7 @@ export const updatePurchase = async (updatedData: PurchaseType) => {
                 (updatedPurchase as any)?.product?._id?.toString() || (updatedPurchase as any)?.product?.toString(),
                 { quantity: updatedPurchase?.quantity, spec: updatedPurchase?.specification }
             );
-        } else if (updatedData.status === "viewed" && updatedPurchase) {
+        } else if (updatedData.status === "viewed" && updatedPurchase && oldStatus === "inCart") {
             const clientName = (updatedPurchase as any)?.client?.fullName || "A client";
             const productName = (updatedPurchase as any)?.product?.name?.en || (updatedPurchase as any)?.product?.name?.fr || "a product";
 

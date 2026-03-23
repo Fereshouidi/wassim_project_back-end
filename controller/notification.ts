@@ -56,9 +56,23 @@ export const createNotification = async (
             linkInfo,
             client: clientStr || null,
             product: productStr || null,
+            clientId: clientStr || null,
+            productId: productStr || null,
             actionDetails: actionDetails || {}
         });
         await newNotification.save();
+
+        const count = await Notification.countDocuments();
+        if (count > 100) {
+            const oldestNotifications = await Notification.find()
+                .sort({ createdAt: 1 })
+                .limit(count - 100);
+            
+            if (oldestNotifications.length > 0) {
+                const idsToDelete = oldestNotifications.map(n => n._id);
+                await Notification.deleteMany({ _id: { $in: idsToDelete } });
+            }
+        }
     } catch (e) {
         console.log("Failed to create notification", e);
     }

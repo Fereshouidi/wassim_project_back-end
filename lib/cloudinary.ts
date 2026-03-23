@@ -156,3 +156,36 @@ export const uploadOwnerLogos = async (sources: {
     throw error;
   }
 };
+
+export const deleteCloudinaryImages = async (urls: string[]) => {
+  try {
+    const publicIds = urls
+      .filter(url => url && url.includes("cloudinary.com"))
+      .map(url => {
+        // Extract public ID from Cloudinary URL
+        // Example: https://res.cloudinary.com/demo/image/upload/v1570979139/folder/image.jpg
+        // Public ID: folder/image
+        const parts = url.split("/");
+        const uploadIndex = parts.indexOf("upload");
+        if (uploadIndex === -1) return null;
+
+        // Skip the version part (starts with 'v' followed by numbers)
+        let startIndex = uploadIndex + 1;
+        if (parts[startIndex].startsWith("v") && /^\d+$/.test(parts[startIndex].substring(1))) {
+          startIndex++;
+        }
+
+        const publicIdWithExtension = parts.slice(startIndex).join("/");
+        const publicId = publicIdWithExtension.substring(0, publicIdWithExtension.lastIndexOf("."));
+        return publicId;
+      })
+      .filter((id): id is string => id !== null);
+
+    if (publicIds.length > 0) {
+      await cloudinary.api.delete_resources(publicIds);
+      console.log(`[Cloudinary] Deleted ${publicIds.length} images`);
+    }
+  } catch (error) {
+    console.error("[Cloudinary] Failed to delete images:", error);
+  }
+};

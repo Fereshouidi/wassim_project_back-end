@@ -35,6 +35,14 @@ const notificationSchema = new mongoose.Schema(
         actionDetails: {
             type: mongoose.Schema.Types.Mixed,
             default: {}
+        },
+        productId: {
+            type: String,
+            default: null
+        },
+        clientId: {
+            type: String,
+            default: null
         }
     },
     {

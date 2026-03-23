@@ -56,7 +56,7 @@ app.use('/api', EvaluationRoute);
 app.use('/api', AiRoute);
 app.use('/api', NotificationRoute);
 
-conn();
+await conn();
 // registerSocketHandlers(io);
 
 app.get("/", (req, res) => {
@@ -64,7 +64,11 @@ app.get("/", (req, res) => {
 
 });
 
-await creteTheBigBossAdminIfNotExist();
+try {
+  await creteTheBigBossAdminIfNotExist();
+} catch (err) {
+  console.error("Failed to initialize admin:", err);
+}
 
 app.listen(port, () => {
 });

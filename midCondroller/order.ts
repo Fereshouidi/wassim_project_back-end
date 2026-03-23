@@ -177,10 +177,12 @@ export const AddOrder__ = async (req: express.Request, res: express.Response) =>
         // 4. Link Purchases, Unset Cart status, and Decrement Stock
         const updatedPurchases = await Promise.all(
             purchasesId.map(async (pId: string) => {
+                const oldPurchase = await getPurchaseById(pId) as any;
                 const purchase = await setOrderToPurchase(pId, newOrder._id as string) as any;
 
-                // Stock Decrement Logic
-                if (purchase?.specification && !purchase.specification.unlimited) {
+                // Stock Decrement Logic: 
+                // Only decrement if it WAS NOT in cart (if it was in cart, stock was already deducted)
+                if (oldPurchase?.status !== "inCart" && purchase?.specification && !purchase.specification.unlimited) {
                     await Specification.findByIdAndUpdate(
                         purchase.specification._id,
                         { $inc: { quantity: -(purchase.quantity || 1) } }

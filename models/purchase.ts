@@ -18,6 +18,31 @@ const purchaseSchema = new mongoose.Schema(
     specification: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Specification",
+        publicKey: String,
+        default: null
+    },
+    productId: {
+        type: String,
+        default: null
+    },
+    productName: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
+    productThumb: {
+        type: String,
+        default: null
+    },
+    specPrice: {
+        type: Number,
+        default: 0
+    },
+    specColor: {
+        type: String,
+        default: null
+    },
+    specSize: {
+        type: String,
         default: null
     },
     quantity: {

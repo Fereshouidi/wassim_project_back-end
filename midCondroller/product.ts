@@ -6,6 +6,7 @@ import { handleProductImagesUpload } from '../lib/multer.js';
 import { getLikesByClient } from '../controller/like.js';
 import { addSpecification } from '../controller/specification.js';
 import Specification from '../models/specification.js';
+import { translate } from 'google-translate-api-x';
 import Like from '../models/like.js';
 
 const safeParseStatus = (status: any): ProductStatus[] => {
@@ -108,9 +109,21 @@ export const addProduct_ = async (req: express.Request, res: express.Response) =
       }];
     }
 
-    // 4. Name & Description (Direct use of French for English)
+    // 4. Translations (French -> English)
     let nameEn = req.body.nameFr;
     let descriptionEn = req.body.descriptionFr || "";
+
+    try {
+      if (req.body.nameFr) {
+        const resName = await translate(req.body.nameFr, { from: 'fr', to: 'en' }) as any;
+        nameEn = resName.text;
+      }
+      if (req.body.descriptionFr) {
+        const resDesc = await translate(req.body.descriptionFr, { from: 'fr', to: 'en' }) as any;
+        descriptionEn = resDesc.text;
+      }
+    } catch (e) {
+    }
 
     // 5. Final Product Object Construction
     const productData = {
@@ -358,10 +371,20 @@ export const updateProduct_ = async (req: express.Request, res: express.Response
   try {
     const { _id, nameFr, price, oldPrice, descriptionFr } = req.body;
 
-    // --- 1. Name & Description Logic ---
-    // Using French name/description for English fields
-    const nameEn = nameFr;
-    const descriptionEn = descriptionFr || "";
+    // --- 1. Automated Translation Logic ---
+    // Translating from French (fr) to English (en)
+    let nameEn = req.body.nameEn;
+    let descriptionEn = req.body.descriptionEn;
+
+    if (!nameEn && nameFr) {
+      const translation = await translate(nameFr, { from: 'fr', to: 'en' }) as any;
+      nameEn = translation.text;
+    }
+
+    if (!descriptionEn && descriptionFr) {
+      const translation = await translate(descriptionFr, { from: 'fr', to: 'en' }) as any;
+      descriptionEn = translation.text;
+    }
 
     // --- 2. Specifications Handling ---
     const incomingSpecs = req.body.specifications ? JSON.parse(req.body.specifications) : [];

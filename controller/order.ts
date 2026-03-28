@@ -46,6 +46,7 @@ export const getInationalOrderBatches = async (limit: number) => {
 
         const pendingOrders = await Order.find({ status: "pending" })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -59,6 +60,7 @@ export const getInationalOrderBatches = async (limit: number) => {
 
         const failedOrders = await Order.find({ status: "failed" })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -72,6 +74,7 @@ export const getInationalOrderBatches = async (limit: number) => {
 
         const deliveredOrders = await Order.find({ status: "delivered" })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -107,6 +110,7 @@ export const getOrdersByStatus = async (
         const orders = await Order.find(filter)
             .limit(limit)
             .skip(skip)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -138,6 +142,7 @@ export const getOrdersByClientAndStatus = async (
         const orders = await Order.find(filter)
             .limit(limit)
             .skip(skip)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -192,6 +197,7 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
 
         const pendingOrders = await Order.find({ status: "pending", client: clientId })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -205,6 +211,7 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
 
         const failedOrders = await Order.find({ status: "failed", client: clientId })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [
@@ -218,6 +225,7 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
 
         const deliveredOrders = await Order.find({ status: "delivered", client: clientId })
             .limit(limit)
+            .populate("client")
             .populate({
                 path: "purchases",
                 populate: [

@@ -5,9 +5,8 @@ export const geminiApiKey = process.env.GEMINI_API_KEY || "";
 export const openRouterApiKey = process.env.OPENROUTER_API_KEY || "";
 // export const grokApiKey = process.env.GROQ_API_KEY || "";
 
-export const grokApiKey = "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";
+export const grokApiKey = process.env.GROQ_API_KEY || "";
 
-//"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"
 
 
 // --- AI Models Configuration ---

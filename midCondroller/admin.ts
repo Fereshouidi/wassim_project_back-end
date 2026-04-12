@@ -190,16 +190,36 @@ export const validateAdmin_ = async (req: express.Request, res: express.Response
 
 export const updateAdmin_ = async (req: express.Request, res: express.Response) => {
     try {
-        const { updatedRow, lang } = req.body;
-
+        const { updatedRow, lang, currentAdminId } = req.body;
+        
         if (!updatedRow._id) {
             return res.status(400).json({ message: "Admin ID is required" });
         }
 
+        if (!currentAdminId) {
+            return res.status(401).json({ message: "Authentication required to perform this action" });
+        }
+
         // Get current admin data for comparison
-        const prevAdminData = await getAdminById(updatedRow._id);
+        const [prevAdminData, performingAdmin] = await Promise.all([
+            getAdminById(updatedRow._id),
+            getAdminById(currentAdminId)
+        ]);
+
         if (!prevAdminData) {
-            return res.status(404).json({ message: "Admin not found" });
+            return res.status(404).json({ message: "Target Admin not found" });
+        }
+
+        if (!performingAdmin) {
+            return res.status(404).json({ message: "Performing Admin not found" });
+        }
+
+        // --- Security Check: bigBoss can only be edited by another bigBoss ---
+        if (prevAdminData.type === 'bigBoss' && performingAdmin.type !== 'bigBoss') {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Security violation: Master administrators can only be modified by other master administrators." 
+            });
         }
 
         let verificationInfo = null;
@@ -270,10 +290,35 @@ export const updateAdmin_ = async (req: express.Request, res: express.Response) 
 
 export const deleteAdmin_ = async (req: express.Request, res: express.Response) => {
     try {
-        const { id } = req.query;
+        const { id, currentAdminId } = req.query;
 
         if (!id) {
             return res.status(400).json({ message: "Admin ID is required" });
+        }
+
+        if (!currentAdminId) {
+            return res.status(401).json({ message: "Authentication required to perform this action" });
+        }
+
+        const [targetAdmin, performingAdmin] = await Promise.all([
+            getAdminById(id as string),
+            getAdminById(currentAdminId as string)
+        ]);
+
+        if (!targetAdmin) {
+            return res.status(404).json({ message: "Target Admin not found" });
+        }
+
+        if (!performingAdmin) {
+            return res.status(404).json({ message: "Performing Admin not found" });
+        }
+
+        // --- Security Check: bigBoss can only be deleted by another bigBoss ---
+        if (targetAdmin.type === 'bigBoss' && performingAdmin.type !== 'bigBoss') {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Security violation: Master administrators can only be deleted by other master administrators." 
+            });
         }
 
         const deletedAdmin = await deleteAdmin(id as string);

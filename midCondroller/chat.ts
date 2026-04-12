@@ -8,6 +8,9 @@ import { summaryAgent } from '../ai/groq/agents/summaryAgent.js';
 export const getAnswerFromAi = async (req: express.Request, res: express.Response) => {
     const { userId, message, agent } = req.body;
 
+    console.log({ aaaaaaaaaa: "aaaaaaaaaaaa" });
+
+
     // Protection: Ensure userId exists to avoid creating anonymous sessions
     if (!userId) {
         return res.status(400).json({ error: "userId is required" });
@@ -49,27 +52,47 @@ export const getAnswerFromAi = async (req: express.Request, res: express.Respons
         // 2. Build History (previous logic is correct)
         let history: any[] = [];
         if (session.summary && session.summary.trim() !== "") {
-            history.push({ role: "user", content: `Context: ${session.summary}` });
-            history.push({ role: "assistant", content: "Understood." });
+            history.push({ role: "system", content: `Context: ${session.summary}` });
         }
 
-        const contextWindow = session.messages.slice(-numOfMessageToSummary);
-        const cleanedHistory = contextWindow.map(msg => ({
-            role: msg.role === 'assistant' ? 'assistant' : 'user',
-            content: msg.content
-        }));
+        const contextWindow = session.messages.slice(-15);
+        const cleanedHistory = contextWindow.map(msg => {
+            const m: any = {
+                role: msg.role,
+                content: msg.content || ""
+            };
+            if (msg.role === 'assistant' && (msg as any).tool_calls) {
+                m.tool_calls = (msg as any).tool_calls;
+            } else if (msg.role === 'tool' && (msg as any).tool_call_id) {
+                m.tool_call_id = (msg as any).tool_call_id;
+                m.name = (msg as any).name;
+            }
+            return m;
+        });
 
         history = [...history, ...cleanedHistory];
         if (history.length > 0 && history[0].role === 'assistant') history.shift();
 
-        // 3. Call Orchestrator
-        const aiResponse = await orchestrator(message, history, agent) as any;
+        // 3. Call Orchestrator with SSE status feedback
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const onStatus = (status: string) => {
+            res.write(`event: status\ndata: ${JSON.stringify({ message: status })}\n\n`);
+        };
+
+        console.log("CRAB: Calling Orchestrator with message ->", message);
+        const aiResponse = await orchestrator(message, history, session.summary, userId, agent, onStatus) as any;
+        console.log("CRAB: Orchestrator responded.");
 
         let fullAiText = "";
         let uiAction = null;
         let productsFound = null;
         let filtrationUsed = null;
         let searchQuery = null;
+        let fullHistory = null;
+        let cartChanged = false;
 
         if (typeof aiResponse === 'string') {
             fullAiText = aiResponse;
@@ -78,39 +101,68 @@ export const getAnswerFromAi = async (req: express.Request, res: express.Respons
             uiAction = aiResponse.uiAction || null;
             productsFound = aiResponse.productsFound || null;
             filtrationUsed = aiResponse.filtrationUsed || null;
-            searchQuery = aiResponse.searchQuery || null
+            searchQuery = aiResponse.searchQuery || null;
+            fullHistory = aiResponse.fullHistory || null;
+            cartChanged = aiResponse.cartChanged || false;
         }
 
         fullAiText = fullAiText || "Sorry, I couldn't formulate a response right now.";
 
-        // 4. Save messages
-        session.messages.push({ role: "user", content: message } as any);
-        session.messages.push({ role: "assistant", content: fullAiText } as any);
+        // 4. Save messages (Preserving full tool history)
+        if (fullHistory && Array.isArray(fullHistory)) {
+            let indexOfUserMsg = -1;
+            for (let i = fullHistory.length - 1; i >= 0; i--) {
+                if (fullHistory[i].role === 'user' && (fullHistory[i].content?.trim() === message.trim() || fullHistory[i].content?.includes(message.trim()))) {
+                    indexOfUserMsg = i;
+                    break;
+                }
+            }
+            const messagesToSave = indexOfUserMsg !== -1 ? fullHistory.slice(indexOfUserMsg + 1) : fullHistory;
+            session.messages.push({ role: "user", content: message } as any);
+            messagesToSave.forEach((m: any) => {
+                const sessionMsg: any = { role: m.role, content: m.content || "" };
+                if (m.role === 'assistant' && m.tool_calls) sessionMsg.tool_calls = m.tool_calls;
+                else if (m.role === 'tool' && m.tool_call_id) {
+                    sessionMsg.tool_call_id = m.tool_call_id;
+                    sessionMsg.name = m.name;
+                }
+                session.messages.push(sessionMsg as any);
+            });
+        } else {
+            session.messages.push({ role: "user", content: message } as any);
+            session.messages.push({ role: "assistant", content: fullAiText } as any);
+        }
 
-        // 5. Summarization logic
-        if (session.messages.length % numOfMessageToSummary === 0) {
+        // 5. Summarization & Cleaning
+        if (session.messages.length >= numOfMessageToSummary && session.messages.length % numOfMessageToSummary === 0) {
             try {
                 const interactions = session.messages.slice(-numOfMessageToSummary)
-                    .map(m => `${m.role}: ${m.content}`).join("\n");
-                const newSummary = await summaryAgent(`Old: ${session.summary}\nNew: ${interactions}`);
-                if (newSummary) session.summary = newSummary;
+                    .filter(m => m.role !== 'system')
+                    .map(m => `${m.role}: ${m.content || (m.tool_calls ? "called tool " + m?.tool_calls[0]?.function?.name : "")}`).join("\n")
+                const newSummary = await summaryAgent(`Old Summary: ${session.summary}\nNew Interactions:\n${interactions}`);
+                if (newSummary && !newSummary.includes("Failed")) session.summary = newSummary;
             } catch (sumErr) {
+                console.error("Summarization failed:", sumErr);
             }
         }
 
         await session.save();
 
-        // 6. Final response
-        return res.status(200).json({
+        // 6. Final SSE response
+        res.write(`event: answer\ndata: ${JSON.stringify({
             answer: fullAiText,
-            uiAction: uiAction,
-            // productsFound,
+            uiAction,
             filtrationUsed,
             searchQuery,
+            cartChanged,
             sessionId: (session as any).get ? (session as any).get('sessionId') : session._id
-        });
+        })}\n\n`);
+
+        res.end();
+        return;
 
     } catch (err: any) {
+        console.log({ err });
         res.status(500).json({ error: "Internal Server Error" });
     }
 };

@@ -14,7 +14,7 @@ router.get('/getAllProducts', async (req, res) => {
     await getAllProducts_(req, res);
 })
 
-router.get('/getProductById', async (req, res) => {
+router.get('/getProductById', async (req, res) => {    
     await getProductById_(req, res);
 })
 

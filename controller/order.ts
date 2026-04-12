@@ -1,6 +1,7 @@
 import Order from "../models/order.js";
-import { OrderType } from "../types/index.js";
+import { OrderType, OwnerInfoType } from "../types/index.js";
 import { createNotification } from "./notification.js";
+import { getPurchasesInCartByClient, setOrderToPurchase } from "./purchase.js";
 
 export const AddOrder = async (orderdata: OrderType) => {
     try {
@@ -25,6 +26,35 @@ export const AddOrder = async (orderdata: OrderType) => {
         throw err;
     }
 }
+
+export const checkout = async (clientId: string, orderData: Partial<OrderType>) => {
+    try {
+        // 1. Get all items in cart
+        const cartItems = await getPurchasesInCartByClient(clientId);
+        if (cartItems.length === 0) throw new Error("Cart is empty");
+
+        const lastOrder = await getLastOrderNumber() as OrderType;
+        const ownerInfo = await getOwnerInfo() as unknown as OwnerInfoType
+
+        // 2. Create the order
+        const order = await AddOrder({
+            ...orderData,
+            shippingCoast: ownerInfo?.shippingCost,
+            orderNumber: lastOrder ? (lastOrder.orderNumber || 0) + 1 : 1,
+            client: clientId,
+            status: "pending"
+        } as OrderType);
+
+        // 3. Link purchases to this order
+        for (const item of cartItems) {
+            await setOrderToPurchase(item._id.toString(), order._id.toString());
+        }
+
+        return order;
+    } catch (err) {
+        throw err;
+    }
+};
 
 export const getLastOrderNumber = async () => {
     try {
@@ -282,6 +312,7 @@ export const deleteOrderById = async (orderId?: string) => {
 }
 
 import Specification from "../models/specification.js";
+import { getOwnerInfo } from "./ownerInfo.js";
 
 export const updateOrderStatus = async (orderId?: string, newStatus?: string) => {
     try {
@@ -394,7 +425,10 @@ export const getOrdersDetailsByDateRange = async (from: number, to: number, stat
             .populate("client")
             .populate({
                 path: "purchases",
-                populate: { path: "product" }
+                populate: [
+                    { path: "product" },
+                    { path: "specification" }
+                ]
             })
             .sort({ createdAt: -1 })
             .skip(skip)

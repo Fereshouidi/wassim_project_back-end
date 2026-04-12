@@ -197,6 +197,9 @@ export const getFavoriteProductsByClient_ = async (req: express.Request, res: ex
 
   try {
 
+    console.log("hh");
+    
+
     const { clientId } = req.query;
 
     const likes = await getLikesByClient(clientId as string);

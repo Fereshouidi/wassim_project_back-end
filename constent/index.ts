@@ -3,7 +3,12 @@
 // --- API Keys (Secrets from .env) ---
 export const geminiApiKey = process.env.GEMINI_API_KEY || "";
 export const openRouterApiKey = process.env.OPENROUTER_API_KEY || "";
-export const grokApiKey = process.env.GROQ_API_KEY || "";
+// export const grokApiKey = process.env.GROQ_API_KEY || "";
+
+export const grokApiKey = "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";
+
+//"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"
+
 
 // --- AI Models Configuration ---
 export let activeGeminiModel = "gemini-2.5-flash";
@@ -24,7 +29,7 @@ export const databaseLink = databaseLink_real || "";
 
 // Set active key (Setting Groq as default based on original code)
 export const activeAiApiKey = grokApiKey;
-export const numOfMessageToSummary = 5;
+export const numOfMessageToSummary = 10;
 
 // groq/compound
 // Model name (ID), Status

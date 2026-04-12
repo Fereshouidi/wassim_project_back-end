@@ -1,38 +1,42 @@
+import { uiControllerTools } from "./uiControllerTools.js";
+
 export const supportTools = [
-  {
-    type: "function",
-    function: {
-      name: "controlUI",
-      description: "التحكم في عناصر الواجهة مثل فتح السلة أو القائمة الجانبية",
-      parameters: {
-        type: "object",
-        properties: {
-          element: {
-            type: "string",
-            enum: ["cart", "sidebar", "search_bar", "textDirection"],
-            description: "العنصر المراد التحكم به"
-          },
-          state: {
-            type: "string",
-            enum: ["open", "close", "rtl"],
-            description: "الحالة المطلوبة"
-          }
-        },
-        required: ["element", "state"]
-      }
-    },
-  },
-{
+    ...uiControllerTools,
+    {
         type: "function",
         function: {
             name: "searchProducts",
-            description: "استخدم هذه الأداة عندما يطلب المستخدم البحث عن منتجات أو يسأل عن الأسعار والمواصفات",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: { type: "string", description: "نص البحث" }
-                }
-            }
+            description: "use this tool when the user wants to search for products or asks about prices and specifications",
+            // parameters: {
+            //     type: "object",
+            //     properties: {
+            //         query: { type: "string", description: "نص البحث" }
+            //     }
+            // }
         }
+    },
+    {
+      type: "function",
+      function: {
+        name: "manageCart",
+        description: "Use this tool to manage cart data like put product in cart or remove product from cart",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      },
+    },
+    {
+       type: "function",
+       function: {
+         name: "manageOrders",
+         description: "Use this tool when the user asks about their orders, delivery status, or order history",
+         parameters: {
+           type: "object",
+           properties: {},
+           required: []
+         }
+       },
     }
 ]

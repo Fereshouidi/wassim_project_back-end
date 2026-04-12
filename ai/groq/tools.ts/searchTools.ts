@@ -1,4 +1,7 @@
+import { uiControllerTools } from "./uiControllerTools.js";
+
 export const searchTools = [
+  ...uiControllerTools,
   {
     type: "function",
     function: {
@@ -56,4 +59,4 @@ export const searchTools = [
       }
     }
   }
-];
+];

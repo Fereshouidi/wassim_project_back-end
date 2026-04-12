@@ -58,6 +58,10 @@ const ownerInfoSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    freeShippingThreshold: {
+        type: Number,
+        default: 0
+    },
     aiPrompt: {
         type: String,
         default: ""

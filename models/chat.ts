@@ -3,8 +3,18 @@ import mongoose from "mongoose";
 import { Schema } from 'mongoose';
 
 const messageSchema = new Schema({
-    role: { type: String, enum: ['user', 'assistant', 'system'], required: true },
-    content: { type: String, required: true }
+    role: { type: String, enum: ['user', 'assistant', 'system', 'tool'], required: true },
+    content: { type: String, required: false },
+    tool_calls: [{
+        id: String,
+        type: { type: String, default: "function" },
+        function: {
+            name: String,
+            arguments: Schema.Types.Mixed
+        }
+    }],
+    tool_call_id: { type: String, required: false },
+    name: { type: String, required: false }
 }, { _id: false });
 
 const ChatSchema = new Schema({

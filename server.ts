@@ -1,3 +1,4 @@
+process.stdout.write("Test Output via STDOUT\n");
 import 'dotenv/config';
 import express, { json } from 'express';
 import conn from './connection.js';
@@ -22,6 +23,19 @@ import { creteTheBigBossAdminIfNotExist } from './controller/admin.js';
 
 
 const port = process.env.PORT || 3001;
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', JSON.stringify(reason, null, 2));
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  if (err instanceof Error) {
+    console.error(err.stack);
+  } else {
+    console.error('Non-Error object caught:', JSON.stringify(err, null, 2));
+  }
+});
 
 const app = express();
 // const server = http.createServer(app);
@@ -61,14 +75,18 @@ await conn();
 
 app.get("/", (req, res) => {
   res.send("Server is working!");
-
+  console.log("aaaaaaaaaaaaa");
 });
+console.log('hhhhh');
+
 
 try {
   await creteTheBigBossAdminIfNotExist();
 } catch (err) {
   console.error("Failed to initialize admin:", err);
 }
+
+console.log("aaaaaaaa");
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

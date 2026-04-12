@@ -8,3 +8,12 @@ export const getChatsByClient = async (clientId: string) => {
         ).sort({ updatedAt: -1 });
     } catch (err) { return []; }
 };
+
+export const updateChat = async (clientId: string, messages: any[]) => {
+    try {
+        return await Chat.updateOne(
+            { userId: clientId.toString() },
+            { $push: { messages: { $each: messages } } }
+        );
+    } catch (err) { return null; }
+};

@@ -104,6 +104,13 @@ export const getClientByToken_ = async (req: express.Request, res: express.Respo
             client = await getClientByDeviceId(deviceId);
         }
 
+        // if (client && client.deviceId && !client.password) {
+        //     client = await addClient({ deviceId } as ClientType);
+        // }
+
+        console.log({client});
+        
+
         if (!client) {
             if (!deviceId) {
                 return res.status(400).json({ message: "DeviceId is required to create a new client" });
@@ -342,17 +349,20 @@ export const validateClientLogin_ = async (req: express.Request, res: express.Re
 
 export const logoutClient_ = async (req: express.Request, res: express.Response) => {
     try {
-        const { fullName } = req.query;
+        const { _id } = req.query;
 
-        if (!fullName) {
+        if (!_id) {
             return res.status(400).json({
-                message: "fullName is required to logout!"
+                message: "_id is required to logout!"
             });
         }
 
+        console.log({ _id });
+
+
         // Find the client and clear their session-related data
         const client = await Client.findOneAndUpdate(
-            { fullName: fullName as string },
+            { _id: _id as string },
             {
                 $set: {
                     token: "",
@@ -361,6 +371,8 @@ export const logoutClient_ = async (req: express.Request, res: express.Response)
             },
             { new: true }
         );
+
+        console.log({ client });
 
         if (!client) {
             return res.status(404).json({

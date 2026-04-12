@@ -234,15 +234,15 @@ export const getProductsBySearch = async (
     }
 
     /**
-     * 4. فلترة الأسعار
+     * 4. فلترة الأسعار - Only add if to or from is provided and not zero
      */
-    if (filtration.price) {
+    if (filtration.price && (filtration.price.from > 0 || filtration.price.to > 0)) {
       const priceFrom = Number(filtration.price.from);
       const priceTo = Number(filtration.price.to);
       productConditions.push({
         price: {
           $gte: isNaN(priceFrom) ? 0 : priceFrom,
-          $lte: isNaN(priceTo) ? 999999999 : priceTo,
+          $lte: (isNaN(priceTo) || priceTo === 0) ? 999999999 : priceTo,
         },
       });
     }
@@ -276,7 +276,7 @@ export const getProductsBySearch = async (
     }
 
     // دمج كل الشروط في استعلام واحد
-    const finalFilter = { $and: productConditions };
+    const finalFilter = productConditions.length === 1 ? productConditions[0] : { $and: productConditions };
 
     /**
      * 6. منطق الترتيب (Sorting)
@@ -734,6 +734,17 @@ export const getProductAnalytics = async (productId: string) => {
     const inCartCount = inCartData[0]?.count || 0;
     const inCartDetails = inCartData[0]?.details || [];
 
+    // 4. Evaluations (Reviews)
+    const evaluations = await Evaluation.find({ product: pId }).populate('client', 'fullName').lean();
+    const evaluationDetails = evaluations.map(e => ({
+      _id: e._id,
+      clientId: (e.client as any)?._id,
+      clientName: (e.client as any)?.fullName || 'Someone',
+      rating: (e as any).number,
+      note: (e as any).note,
+      date: (e as any).createdAt
+    }));
+
     const stats = (salesData && salesData.length > 0) ? salesData[0] : { totalQuantity: 0, totalRevenue: 0, orderCount: 0, revenueDetails: [] };
 
     return {
@@ -741,7 +752,9 @@ export const getProductAnalytics = async (productId: string) => {
       favoriteCount: favorites.length,
       favoriteDetails,
       inCartCount,
-      inCartDetails
+      inCartDetails,
+      evaluationCount: evaluations.length,
+      evaluationDetails
     };
 
   } catch (error) {

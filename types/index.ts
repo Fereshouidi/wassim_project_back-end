@@ -5,6 +5,8 @@ type language = {
     en: string
 }
 
+export type MessageType = { role: string; content: string; }
+
 export interface OwnerInfoType {
   _id?: string | ObjectId;
   name?: string;

@@ -88,6 +88,7 @@ export const updateOwnerInfo_ = async (req: express.Request, res: express.Respon
             topCollections: safeParse(req.body.topCollections),
             collectionsInSideBar: safeParse(req.body.collectionsInSideBar),
             shippingCost: req.body.shippingCost ? Number(req.body.shippingCost) : 0,
+            freeShippingThreshold: req.body.freeShippingThreshold ? Number(req.body.freeShippingThreshold) : 0,
             aiPrompt: req.body.aiPrompt
         };
 

@@ -141,6 +141,28 @@ export const updatePurchase = async (updatedData: PurchaseType) => {
 
 }
 
+export const removePurchase = async (purchaseId: string) => {
+    try {
+        const purchase = await Purchase.findById(purchaseId).populate('specification').lean();
+        if (!purchase) return null;
+
+        // Stock recovery if it was in cart
+        if (purchase.status === "inCart") {
+            if (purchase.specification && !(purchase.specification as any).unlimited) {
+                await Specification.findByIdAndUpdate(
+                    (purchase.specification as any)._id,
+                    { $inc: { quantity: purchase.quantity || 1 } }
+                );
+            }
+        }
+
+        await Purchase.findByIdAndDelete(purchaseId);
+        return purchase;
+    } catch (err) {
+        throw err;
+    }
+}
+
 export const getPurchaseByClientAndProduct = async (clientId: string, productId: string) => {
 
     try {

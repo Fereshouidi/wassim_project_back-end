@@ -63,8 +63,21 @@ const purchaseSchema = new mongoose.Schema(
         type: String ,
         enum: [ "viewed", "inCart", "ordered", 'delivered' ],
         default: "viewed"
+    },
+    isCustomized: {
+        type: Boolean,
+        default: false
+    },
+    customizedCharms: {
+        type: [{
+            charm: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+            charmId: String,
+            spec: { type: mongoose.Schema.Types.ObjectId, ref: "Specification" },
+            x: Number,
+            y: Number
+        }],
+        default: []
     }
-
   },
   {
     timestamps: true,

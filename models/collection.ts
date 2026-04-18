@@ -30,6 +30,11 @@ const collectionSchema = new mongoose.Schema(
     display: {
         type: String,
         enum: ["vertical", "horizontal"]
+    },
+    customizable: {
+        type: String,
+        enum: ["none", "base", "pendant"],
+        default: "none"
     }
   },
   {

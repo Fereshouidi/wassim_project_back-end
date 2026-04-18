@@ -93,7 +93,8 @@ export interface CollectionType {
     name: language,
     thumbNail: string,
     type: "private" | "public"
-    display: "vertical" | "horizontal"
+    display: "vertical" | "horizontal",
+    customizable?: "none" | "base" | "pendant"
 }
 
 export type FiltrationType = {
@@ -120,6 +121,8 @@ export interface PurchaseType {
   specification?: SpecificationType;
   cart?: string | null;
   order?: string | null
+  isCustomized?: boolean
+  customizedCharms?: string[]
   status?: "viewed" | "inCart" | "ordered" | 'delivered'
   createdAt?: Date | null;
   updatedAt?: Date | null;

@@ -1,6 +1,6 @@
 import express from 'express';
-import { addProduct_, deleteProducts_, getAllProducts_, getBestSellers_, getFavoriteProductsByClient_, getMostProductExpensive_, getProductAnalytics_, getProductById_, getProductsByCollection_, getProductsBySearch_, hideProducts_, updateProduct_ } from '../midCondroller/product.js';
-import { uploadProductMiddleware } from '../lib/multer.js';
+import { addProduct_, deleteProducts_, getAllProducts_, getBestSellers_, getFavoriteProductsByClient_, getMostProductExpensive_, getProductAnalytics_, getProductById_, getProductsByCollection_, getProductsBySearch_, hideProducts_, updateProduct_, removeBackground_ } from '../midCondroller/product.js';
+import { uploadProductMiddleware, uploadSingleImageMiddleware } from '../lib/multer.js';
 const router = express.Router();
 
 
@@ -8,6 +8,12 @@ router.post(
     "/addProduct",
     uploadProductMiddleware,
     addProduct_
+);
+
+router.post(
+    "/removeBackground",
+    uploadSingleImageMiddleware,
+    removeBackground_
 );
 
 router.get('/getAllProducts', async (req, res) => {

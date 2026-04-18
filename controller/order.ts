@@ -83,6 +83,7 @@ export const getInationalOrderBatches = async (limit: number) => {
                     { path: "client" },
                     { path: "product" },
                     { path: "specification" },
+                    { path: "customizedCharms.charm" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -97,6 +98,7 @@ export const getInationalOrderBatches = async (limit: number) => {
                     { path: "client" },
                     { path: "product" },
                     { path: "specification" },
+                    { path: "customizedCharms.charm" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -111,6 +113,7 @@ export const getInationalOrderBatches = async (limit: number) => {
                     { path: "client" },
                     { path: "product" },
                     { path: "specification" },
+                    { path: "customizedCharms.charm" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -145,8 +148,10 @@ export const getOrdersByStatus = async (
                 path: "purchases",
                 populate: [
                     { path: "client" },
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ],
             })
             .sort({ createdAt: -1 })
@@ -177,8 +182,10 @@ export const getOrdersByClientAndStatus = async (
                 path: "purchases",
                 populate: [
                     { path: "client" },
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ],
             })
             .sort({ createdAt: -1 })
@@ -198,12 +205,15 @@ export const getOrdersByClient = async (clientId: string) => {
             .populate({
                 path: "purchases",
                 populate: [
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "client" },
-                    { path: "specification" }
+                    { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
     } catch (err) { return []; }
 };
 
@@ -214,9 +224,11 @@ export const getOrderById = async (orderId: string) => {
             .populate({
                 path: "purchases",
                 populate: [
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "client" },
-                    { path: "specification" }
+                    { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             });
     } catch (err) { return null; }
@@ -232,8 +244,10 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
                 path: "purchases",
                 populate: [
                     { path: "client" },
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -246,8 +260,10 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
                 path: "purchases",
                 populate: [
                     { path: "client" },
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -260,8 +276,10 @@ export const getInationalOrdeByClient = async (clientId: string, limit: number) 
                 path: "purchases",
                 populate: [
                     { path: "client" },
-                    { path: "product" },
+                    { path: "product", populate: { path: "specifications" } },
                     { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -381,10 +399,12 @@ export const getOrdersAnalytics = async (from: number, to: number) => {
         // 4. Fetch data for both periods simultaneously using countDocuments
         const [currentCount, previousCount] = await Promise.all([
             Order.countDocuments({
-                createdAt: { $gte: currentFrom, $lte: currentTo }
+                updatedAt: { $gte: currentFrom, $lte: currentTo },
+                status: 'delivered'
             }),
             Order.countDocuments({
-                createdAt: { $gte: previousFrom, $lte: previousTo }
+                updatedAt: { $gte: previousFrom, $lte: previousTo },
+                status: 'delivered'
             })
         ]);
 
@@ -427,7 +447,9 @@ export const getOrdersDetailsByDateRange = async (from: number, to: number, stat
                 path: "purchases",
                 populate: [
                     { path: "product" },
-                    { path: "specification" }
+                    { path: "specification" },
+                    { path: "customizedCharms.charm", populate: { path: "specifications" } },
+                    { path: "customizedCharms.spec" }
                 ]
             })
             .sort({ createdAt: -1 })
@@ -471,6 +493,48 @@ export const getDailySalesByDateRange = async (from: number, to: number, limit: 
                 $unwind: { path: '$specData', preserveNullAndEmptyArrays: true }
             },
             {
+                $lookup: {
+                    from: 'specifications',
+                    localField: 'orderPurchases.customizedCharms.spec',
+                    foreignField: '_id',
+                    as: 'charmsSpecs'
+                }
+            },
+            {
+                $addFields: {
+                    charmsTotal: {
+                        $reduce: {
+                            input: { $ifNull: ["$orderPurchases.customizedCharms", []] },
+                            initialValue: 0,
+                            in: {
+                                $add: [
+                                    "$$value",
+                                    {
+                                        $let: {
+                                            vars: {
+                                                foundSpec: {
+                                                    $arrayElemAt: [
+                                                        {
+                                                            $filter: {
+                                                                input: { $ifNull: ["$charmsSpecs", []] },
+                                                                as: "cs",
+                                                                cond: { $eq: ["$$cs._id", "$$this.spec"] }
+                                                            }
+                                                        },
+                                                        0
+                                                    ]
+                                                }
+                                            },
+                                            in: { $ifNull: ["$$foundSpec.price", 0] }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            {
                 $group: {
                     _id: "$_id",
                     orderDate: { $first: "$createdAt" },
@@ -478,7 +542,7 @@ export const getDailySalesByDateRange = async (from: number, to: number, limit: 
                     itemsTotal: {
                         $sum: {
                             $multiply: [
-                                { $ifNull: ["$specData.price", 0] },
+                                { $add: [{ $ifNull: ["$specData.price", { $ifNull: ["$orderPurchases.specPrice", 0] }] }, { $ifNull: ["$charmsTotal", 0] }] },
                                 { $ifNull: ["$orderPurchases.quantity", 0] }
                             ]
                         }

@@ -19,7 +19,9 @@ export const addPurchase = async (purchaseData: PurchaseType) => {
             productThumb: (prod as any)?.thumbNail || null,
             specPrice: (spec as any)?.price || 0,
             specColor: (spec as any)?.color || null,
-            specSize: (spec as any)?.size || null
+            specSize: (spec as any)?.size || null,
+            isCustomized: purchaseData.isCustomized || false,
+            customizedCharms: purchaseData.customizedCharms || []
         });
 
         // Stock Reservation Logic (for direct Add to Cart)
@@ -34,7 +36,9 @@ export const addPurchase = async (purchaseData: PurchaseType) => {
 
         const populatedPurchase = await Purchase.findOne({ _id: newPurchase._id })
             .populate('specification')
-            .populate('product')
+            .populate({ path: 'product', populate: { path: "specifications" } })
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .populate('client')
             .lean()
 
@@ -103,7 +107,9 @@ export const updatePurchase = async (updatedData: PurchaseType) => {
             { new: true }
         )
             .populate('specification')
-            .populate('product')
+            .populate({ path: 'product', populate: { path: "specifications" } })
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .populate('client')
             .lean();
 
@@ -173,7 +179,9 @@ export const getPurchaseByClientAndProduct = async (clientId: string, productId:
             status: { $in: ["viewed"] }
         })
             .populate('specification')
-            .populate("product")
+            .populate({ path: 'product', populate: { path: "specifications" } })
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .lean()
         return purchase;
 
@@ -189,7 +197,9 @@ export const getPurchaseById = async (purchaseId: string) => {
 
         const purchase = await Purchase.findOne({ _id: purchaseId })
             .populate('specification')
-            .populate("product")
+            .populate({ path: 'product', populate: { path: "specifications" } })
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .lean()
         return purchase;
 
@@ -211,8 +221,10 @@ export const getPurchasesInCartByClient = async (clientId: string) => {
             client: clientId,
             status: "inCart"
         })
-            .populate('product')
+            .populate({ path: 'product', populate: { path: "specifications" } })
             .populate('specification')
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .lean();
 
         return purchases;
@@ -233,8 +245,10 @@ export const setOrderToPurchase = async (
             { $set: { order: orderId, status: "ordered" } },
             { new: true }
         )
-            .populate('product')
+            .populate({ path: 'product', populate: { path: "specifications" } })
             .populate('specification')
+            .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
+            .populate("customizedCharms.spec")
             .lean();
 
         return updatedPurchase;
@@ -325,16 +339,70 @@ export const getProfitsByDate = async (from: number, to: number) => {
                 },
                 { $unwind: { path: '$specData', preserveNullAndEmptyArrays: true } },
                 {
+                    $lookup: {
+                        from: 'specifications',
+                        localField: 'customizedCharms.spec',
+                        foreignField: '_id',
+                        as: 'charmsSpecs'
+                    }
+                },
+                {
+                    $addFields: {
+                        charmsTotal: {
+                            $reduce: {
+                                input: { $ifNull: ["$customizedCharms", []] },
+                                initialValue: 0,
+                                in: {
+                                    $add: [
+                                        "$$value",
+                                        {
+                                            $let: {
+                                                vars: {
+                                                    foundSpec: {
+                                                        $arrayElemAt: [
+                                                            {
+                                                                $filter: {
+                                                                    input: { $ifNull: ["$charmsSpecs", []] },
+                                                                    as: "cs",
+                                                                    cond: { $eq: ["$$cs._id", "$$this.spec"] }
+                                                                }
+                                                            },
+                                                            0
+                                                        ]
+                                                    }
+                                                },
+                                                in: { $ifNull: ["$$foundSpec.price", 0] }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
                     $project: {
                         day: { $dateToString: { format: "%Y-%m-%d", date: "$orderDoc.updatedAt" } },
-                        itemRevenue: { $multiply: [{ $ifNull: ["$specData.price", 0] }, "$quantity"] },
+                        itemRevenue: { 
+                            $multiply: [
+                                { $add: [{ $ifNull: ["$specData.price", { $ifNull: ["$specPrice", 0] }] }, { $ifNull: ["$charmsTotal", 0] }] }, 
+                                "$quantity"
+                            ] 
+                        },
                         shipping: { $ifNull: ["$orderDoc.shippingCoast", 0] }
                     }
                 },
                 {
                     $group: {
-                        _id: "$day",
-                        profit: { $sum: { $add: ["$itemRevenue", "$shipping"] } }
+                        _id: { orderId: "$orderDoc._id", day: "$day" },
+                        shipping: { $first: "$shipping" },
+                        orderItemsRevenue: { $sum: "$itemRevenue" }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$_id.day",
+                        profit: { $sum: { $add: ["$orderItemsRevenue", "$shipping"] } }
                     }
                 },
                 { $sort: { "_id": 1 } },
@@ -418,16 +486,65 @@ export const getTotalSalesByDateRange = async (from: number, to: number) => {
                 },
                 { $unwind: { path: '$specData', preserveNullAndEmptyArrays: true } },
                 {
+                    $lookup: {
+                        from: 'specifications',
+                        localField: 'customizedCharms.spec',
+                        foreignField: '_id',
+                        as: 'charmsSpecs'
+                    }
+                },
+                {
+                    $addFields: {
+                        charmsTotal: {
+                            $reduce: {
+                                input: { $ifNull: ["$customizedCharms", []] },
+                                initialValue: 0,
+                                in: {
+                                    $add: [
+                                        "$$value",
+                                        {
+                                            $let: {
+                                                vars: {
+                                                    foundSpec: {
+                                                        $arrayElemAt: [
+                                                            {
+                                                                $filter: {
+                                                                    input: { $ifNull: ["$charmsSpecs", []] },
+                                                                    as: "cs",
+                                                                    cond: { $eq: ["$$cs._id", "$$this.spec"] }
+                                                                }
+                                                            },
+                                                            0
+                                                        ]
+                                                    }
+                                                },
+                                                in: { $ifNull: ["$$foundSpec.price", 0] }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
                     $group: {
-                        _id: null,
-                        total: {
+                        _id: "$orderDoc._id",
+                        shipping: { $first: { $ifNull: ["$orderDoc.shippingCoast", 0] } },
+                        itemsTotal: {
                             $sum: {
-                                $add: [
-                                    { $multiply: [{ $ifNull: ["$specData.price", 0] }, "$quantity"] },
-                                    { $ifNull: ["$orderDoc.shippingCoast", 0] }
+                                $multiply: [
+                                    { $add: [{ $ifNull: ["$specData.price", { $ifNull: ["$specPrice", 0] }] }, { $ifNull: ["$charmsTotal", 0] }] }, 
+                                    "$quantity"
                                 ]
                             }
                         }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: { $add: ["$itemsTotal", "$shipping"] } }
                     }
                 }
             ]);

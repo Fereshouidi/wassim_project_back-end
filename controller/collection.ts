@@ -247,3 +247,25 @@ export const getSubCollections = async (parentCollectionId: string, status: Coll
         throw err;
     }
 }
+
+export const getCollectionsByCustomizableType = async (type: "base" | "pendant") => {
+    try {
+        const collections = await Collection.find({ customizable: type, status: "active" }).lean();
+        const collectionIds = collections.map(c => c._id);
+
+        const products = await Product.find({
+            collections: { $in: collectionIds },
+            status: "active"
+        }).populate('specifications').lean();
+
+        // Group products by collection
+        const enriched = collections.map(col => ({
+            ...col,
+            products: products.filter(p => p.collections.some(cid => cid.toString() === col._id.toString()))
+        }));
+
+        return enriched;
+    } catch (err) {
+        throw err;
+    }
+}

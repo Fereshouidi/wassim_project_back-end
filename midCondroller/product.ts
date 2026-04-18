@@ -8,6 +8,10 @@ import { addSpecification } from '../controller/specification.js';
 import Specification from '../models/specification.js';
 import { translate } from 'google-translate-api-x';
 import Like from '../models/like.js';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
+import { v2 as cloudinary } from 'cloudinary';
+import streamifier from 'streamifier';
 
 const safeParseStatus = (status: any): ProductStatus[] => {
   if (!status) return ["active"];
@@ -552,5 +556,56 @@ export const getProductAnalytics_ = async (req: express.Request, res: express.Re
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const removeBackground_ = async (req: express.Request, res: express.Response) => {
+  try {
+    console.log("[removeBackground_] API called!");
+    const file = req.file;
+
+    if (!file) {
+      console.log("[removeBackground_] No req.file found! Check form-data fields.");
+      return res.status(400).json({ success: false, message: "No image provided" });
+    }
+
+    console.log("[removeBackground_] File received: ", file.originalname, file.size);
+    const formData = new FormData();
+    formData.append('size', 'auto');
+    formData.append('image_file', file.buffer, { filename: 'image.jpg' });
+
+    const apiKey = process.env.REMOVE_BG_API_KEY;
+    
+    // As a fallback for missing API Key to prevent 500 crashes
+    if (!apiKey || apiKey.trim() === "") {
+      console.warn("[removeBackground_] REMOVE_BG_API_KEY is not defined in .env! Returning original buffer as base64.");
+      const base64 = file.buffer.toString('base64');
+      return res.status(200).json({ success: true, base64 });
+    }
+
+    console.log("[removeBackground_] Using API Key: ", apiKey.substring(0, 5) + "...");
+    const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': apiKey,
+        ...formData.getHeaders()
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[RemoveBG] Failed:", response.status, errorText);
+      return res.status(500).json({ success: false, message: "Failed to remove background from provider: " + errorText });
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    console.log("[removeBackground_] Success from remove.bg. Returning base64 to client.");
+
+    const base64 = buffer.toString('base64');
+    return res.status(200).json({ success: true, base64 });
+  } catch (error: any) {
+    console.error("[removeBackground_] Crash:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

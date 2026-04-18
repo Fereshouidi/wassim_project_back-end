@@ -1,7 +1,7 @@
 import express from 'express';
 import { Server } from "socket.io";
 import { ProductType, PurchaseType } from "../types/index.js";
-import { addPurchase, getdeliveredOrdersByClientAndProduct, getProfitsByDate, getPurchaseByClientAndProduct, getPurchaseById, getPurchasesInCartByClient, updatePurchase } from "../controller/purchase.js";
+import { addPurchase, getdeliveredOrdersByClientAndProduct, getProfitsByDate, getPurchaseByClientAndProduct, getPurchaseById, getPurchasesInCartByClient, getTotalSalesByDateRange, updatePurchase } from "../controller/purchase.js";
 import { getProductById } from '../controller/product.js';
 import Purchase from '../models/purchase.js';
 
@@ -234,88 +234,12 @@ export const getTotalSalesByDateRange_ = async (req: express.Request, res: expre
             return res.status(400).json({ message: "Parameters 'from' and 'to' are required" });
         }
 
-        // --- Start of requested logic function ---
+        const analyticsData = await getTotalSalesByDateRange(Number(from), Number(to));
 
-        // 1. Convert Timestamps and Date objects to ensure covering the full day
-        const currentFrom = new Date(Number(from));
-        currentFrom.setHours(0, 0, 0, 0);
+        return res.status(200).json(analyticsData);
 
-        const currentTo = new Date(Number(to));
-        currentTo.setHours(23, 59, 59, 999);
-
-        // 2. Calculate previous period for comparison (for Trend output)
-        const duration = currentTo.getTime() - currentFrom.getTime() + 1;
-        const previousFrom = new Date(currentFrom.getTime() - duration);
-        const previousTo = new Date(currentFrom.getTime() - 1);
-
-        // Internal function to execute Aggregate
-        const getSum = async (startDate: Date, endDate: Date) => {
-            const result = await Purchase.aggregate([
-                {
-                    $lookup: {
-                        from: 'orders',
-                        localField: 'order',
-                        foreignField: '_id',
-                        as: 'orderDoc'
-                    }
-                },
-                { $unwind: '$orderDoc' },
-                {
-                    $match: {
-                        'orderDoc.status': 'delivered',
-                        'orderDoc.updatedAt': { $gte: startDate, $lte: endDate }
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'specifications',
-                        localField: 'specification',
-                        foreignField: '_id',
-                        as: 'specData'
-                    }
-                },
-                { $unwind: { path: '$specData', preserveNullAndEmptyArrays: true } },
-                {
-                    $group: {
-                        _id: null,
-                        total: {
-                            $sum: {
-                                $add: [
-                                    { $multiply: [{ $ifNull: ["$specData.price", 0] }, "$quantity"] },
-                                    { $ifNull: ["$orderDoc.shippingCoast", 0] }
-                                ]
-                            }
-                        }
-                    }
-                }
-            ]);
-            return result.length > 0 ? result[0].total : 0;
-        };
-
-        // 3. Fetch sum for both periods
-        const [currentTotal, previousTotal] = await Promise.all([
-            getSum(currentFrom, currentTo),
-            getSum(previousFrom, previousTo)
-        ]);
-
-        // 4. Calculate percentage (Trend)
-        let trendValue = 0;
-        if (previousTotal > 0) {
-            trendValue = ((currentTotal - previousTotal) / previousTotal) * 100;
-        } else {
-            trendValue = currentTotal > 0 ? 100 : 0;
-        }
-
-        // --- End of logic function ---
-
-        // Send final result as JSON response
-        return res.status(200).json({
-            totalSales: currentTotal,
-            trend: trendValue.toFixed(1)
-        });
-
-    } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" });
+    } catch (error: any) {
+        return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 };
 

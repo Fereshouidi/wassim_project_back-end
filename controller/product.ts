@@ -577,9 +577,7 @@ export const getProductsSalesAnalytics = async (
         }
       },
       { $unwind: '$productInfo' },
-      { $match: { 'productInfo.status': { $in: status } } },
       {
-        // Fetch specifications to get the correct price for each item
         $lookup: {
           from: 'specifications',
           localField: 'specification',
@@ -589,20 +587,70 @@ export const getProductsSalesAnalytics = async (
       },
       { $unwind: { path: '$specInfo', preserveNullAndEmptyArrays: true } },
       {
+        $lookup: {
+          from: 'products',
+          localField: 'customizedCharms.charm',
+          foreignField: '_id',
+          as: 'charmsProducts'
+        }
+      },
+      {
+        $lookup: {
+          from: 'specifications',
+          localField: 'customizedCharms.spec',
+          foreignField: '_id',
+          as: 'charmsSpecs'
+        }
+      },
+      {
+        $project: {
+          quantity: 1,
+          allItems: {
+            $concatArrays: [
+              [
+                {
+                  id: "$product",
+                  name: "$productInfo.name.en",
+                  image: "$productInfo.thumbNail",
+                  price: { $ifNull: ["$specInfo.price", { $ifNull: ["$specPrice", { $ifNull: ["$productInfo.price", 0] }] }] },
+                  status: "$productInfo.status"
+                }
+              ],
+              {
+                $map: {
+                  input: { $ifNull: ["$customizedCharms", []] },
+                  as: "cc",
+                  in: {
+                    $let: {
+                      vars: {
+                        cp: { $arrayElemAt: [{ $filter: { input: "$charmsProducts", as: "cp", cond: { $eq: ["$$cp._id", "$$cc.charm"] } } }, 0] },
+                        cs: { $arrayElemAt: [{ $filter: { input: "$charmsSpecs", as: "cs", cond: { $eq: ["$$cs._id", "$$cc.spec"] } } }, 0] }
+                      },
+                      in: {
+                        id: "$$cc.charm",
+                        name: "$$cp.name.en",
+                        image: "$$cp.thumbNail",
+                        price: { $ifNull: ["$$cs.price", { $ifNull: ["$$cp.price", 0] }] },
+                        status: "$$cp.status"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      { $unwind: "$allItems" },
+      { $match: { "allItems.status": { $in: status } } },
+      {
         $group: {
-          _id: '$product',
-          name: { $first: '$productInfo.name.en' },
-          image: { $first: '$productInfo.thumbNail' },
-          // 1. Group total items sold (Quantity)
+          _id: '$allItems.id',
+          name: { $first: '$allItems.name' },
+          image: { $first: '$allItems.image' },
           totalSales: { $sum: '$quantity' },
-          // 2. Group total revenue (Quantity x Specification Price)
           totalRevenue: {
-            $sum: {
-              $multiply: [
-                "$quantity",
-                { $ifNull: ["$specInfo.price", "$productInfo.price"] } // Use base product price as fallback
-              ]
-            }
+            $sum: { $multiply: ['$quantity', '$allItems.price'] }
           }
         }
       },
@@ -634,10 +682,22 @@ export const getProductAnalytics = async (productId: string) => {
       { $unwind: '$orderDoc' },
       {
         $match: {
-          product: pId,
+          $or: [
+            { product: pId },
+            { "customizedCharms.charm": pId }
+          ],
           'orderDoc.status': 'delivered'
         }
       },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'product',
+          foreignField: '_id',
+          as: 'productInfo'
+        }
+      },
+      { $unwind: '$productInfo' },
       {
         $lookup: {
           from: 'specifications',
@@ -649,6 +709,22 @@ export const getProductAnalytics = async (productId: string) => {
       { $unwind: { path: '$specInfo', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
+          from: 'products',
+          localField: 'customizedCharms.charm',
+          foreignField: '_id',
+          as: 'charmsProducts'
+        }
+      },
+      {
+        $lookup: {
+          from: 'specifications',
+          localField: 'customizedCharms.spec',
+          foreignField: '_id',
+          as: 'charmsSpecs'
+        }
+      },
+      {
+        $lookup: {
           from: 'clients',
           localField: 'client',
           foreignField: '_id',
@@ -657,18 +733,50 @@ export const getProductAnalytics = async (productId: string) => {
       },
       { $unwind: { path: '$clientInfo', preserveNullAndEmptyArrays: true } },
       {
+        $project: {
+          quantity: 1,
+          orderDoc: 1,
+          clientInfo: 1,
+          allItems: {
+            $concatArrays: [
+              [
+                {
+                  id: "$product",
+                  price: { $ifNull: ["$specInfo.price", { $ifNull: ["$specPrice", { $ifNull: ["$productInfo.price", 0] }] }] }
+                }
+              ],
+              {
+                $map: {
+                  input: { $ifNull: ["$customizedCharms", []] },
+                  as: "cc",
+                  in: {
+                    $let: {
+                      vars: {
+                        cp: { $arrayElemAt: [{ $filter: { input: "$charmsProducts", as: "cp", cond: { $eq: ["$$cp._id", "$$cc.charm"] } } }, 0] },
+                        cs: { $arrayElemAt: [{ $filter: { input: "$charmsSpecs", as: "cs", cond: { $eq: ["$$cs._id", "$$cc.spec"] } } }, 0] }
+                      },
+                      in: {
+                        id: "$$cc.charm",
+                        price: { $ifNull: ["$$cs.price", { $ifNull: ["$$cp.price", 0] }] }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      { $unwind: "$allItems" },
+      { $match: { "allItems.id": pId } },
+      {
         $group: {
-          _id: '$product',
+          _id: '$allItems.id',
           totalQuantity: { $sum: '$quantity' },
           totalRevenue: {
-            $sum: {
-              $multiply: [
-                '$quantity',
-                { $ifNull: ['$specInfo.price', 0] }
-              ]
-            }
+            $sum: { $multiply: ['$quantity', '$allItems.price'] }
           },
-          orders: { $addToSet: '$order' },
+          orders: { $addToSet: '$orderDoc._id' },
           revenueDetails: {
             $push: {
               clientId: '$clientInfo._id',
@@ -676,7 +784,7 @@ export const getProductAnalytics = async (productId: string) => {
               orderNumber: '$orderDoc.orderNumber',
               date: '$orderDoc.updatedAt',
               quantity: '$quantity',
-              amount: { $multiply: ['$quantity', { $ifNull: ['$specInfo.price', 0] }] }
+              amount: { $multiply: ['$quantity', '$allItems.price'] }
             }
           }
         }
@@ -703,7 +811,10 @@ export const getProductAnalytics = async (productId: string) => {
     const inCartData = await Purchase.aggregate([
       {
         $match: {
-          product: pId,
+          $or: [
+            { product: pId },
+            { "customizedCharms.charm": pId }
+          ],
           status: 'inCart'
         }
       },
@@ -717,14 +828,36 @@ export const getProductAnalytics = async (productId: string) => {
       },
       { $unwind: { path: '$clientInfo', preserveNullAndEmptyArrays: true } },
       {
+        $project: {
+          quantity: 1,
+          clientInfo: 1,
+          updatedAt: 1,
+          matchCount: {
+            $cond: {
+              if: { $eq: ["$product", pId] },
+              then: 1,
+              else: {
+                $size: {
+                  $filter: {
+                    input: { $ifNull: ["$customizedCharms", []] },
+                    as: "cc",
+                    cond: { $eq: ["$$cc.charm", pId] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
         $group: {
           _id: null,
-          count: { $sum: '$quantity' },
+          count: { $sum: { $multiply: ["$quantity", "$matchCount"] } },
           details: {
             $push: {
               clientId: '$clientInfo._id',
               clientName: '$clientInfo.fullName',
-              quantity: '$quantity',
+              quantity: { $multiply: ["$quantity", "$matchCount"] },
               date: '$updatedAt'
             }
           }

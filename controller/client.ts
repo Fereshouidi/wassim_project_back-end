@@ -32,7 +32,7 @@ export const addClient = async (clientData: ClientType) => {
 export const getClientById = async (id: string) => {
 
     try {
-        const client = await Client.findOne({ _id: id })
+        const client = await Client.findOne({ _id: id }).lean()
         return client;
     } catch (err) {
         throw err;

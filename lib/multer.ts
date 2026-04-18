@@ -13,6 +13,8 @@ export const uploadCollectionMiddleware = upload.fields([
     { name: "thumbnail", maxCount: 1 },
 ]);
 
+export const uploadSingleImageMiddleware = upload.single("image");
+
 export const handleProductImagesUpload = async (req: any) => {
     // 1. Extract files from request
     const thumbnailBuffer = req.files?.thumbnail ? req.files.thumbnail[0].buffer : null;

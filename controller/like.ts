@@ -94,6 +94,6 @@ export const deleteLike = async (clientId: string, productId: string) => {
 
 export const getLikesByClient = async (clientId: string) => {
     try {
-        return await Like.find({ client: clientId }).populate("product");
+        return await Like.find({ client: clientId }).populate("product").lean();
     } catch (err) { return []; }
 };

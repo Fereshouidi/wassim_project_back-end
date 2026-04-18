@@ -117,7 +117,8 @@ export const getEvaluationsByClient = async (clientId: string) => {
     try {
         return await Evaluation.find({ client: clientId })
             .populate('product')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
     } catch (err) {
         return [];
     }

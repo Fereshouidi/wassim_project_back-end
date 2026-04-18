@@ -1,7 +1,7 @@
 import express from 'express';
 import { CollectionType, ProductType } from '../types/index.js';
 import Collection from '../models/collection.js';
-import { addCollection, deleteCollections, getAllCollections, getCollectionById, getCollectionsByProduct, getCollectionsInSideBar, getHomeCollections, getPublicCollections, getSubCollections, getTopCollections, updateCollection } from '../controller/collection.js';
+import { addCollection, deleteCollections, getAllCollections, getCollectionById, getCollectionsByCustomizableType, getCollectionsByProduct, getCollectionsInSideBar, getHomeCollections, getPublicCollections, getSubCollections, getTopCollections, updateCollection } from '../controller/collection.js';
 import { getProductsByCollection, getProductsCount } from '../controller/product.js';
 import { handleCollectionThumbNailUpload } from '../lib/multer.js';
 import { translate } from 'google-translate-api-x';
@@ -29,6 +29,7 @@ export const addCollection_ = async (req: express.Request, res: express.Response
             },
             type: req.body.type,
             display: req.body.display,
+            customizable: req.body.customizable || "none",
             thumbNail: thumbnail || ""
         } as CollectionType;
 
@@ -267,6 +268,7 @@ export const updateCollection_ = async (req: express.Request, res: express.Respo
             },
             type: req.body.type,
             display: req.body.display,
+            customizable: req.body.customizable || "none",
         } as unknown as CollectionType;
 
         // 1. Handle Translation
@@ -351,6 +353,19 @@ export const getSubCollections_ = async (req: express.Request, res: express.Resp
         }
 
         const collections = await getSubCollections(parentId as string, ["active"], excludes);
+        res.status(200).json({ collections });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+}
+
+export const getCollectionsByCustomizableType_ = async (req: express.Request, res: express.Response) => {
+    try {
+        const { type } = req.query;
+        if (type !== "base" && type !== "pendant") {
+            return res.status(400).json({ message: "Invalid type. Must be 'base' or 'pendant'" });
+        }
+        const collections = await getCollectionsByCustomizableType(type);
         res.status(200).json({ collections });
     } catch (err: any) {
         res.status(500).json({ message: err.message });

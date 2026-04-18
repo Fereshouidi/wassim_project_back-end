@@ -31,6 +31,6 @@ export const getCartContentByClient = async (clientId: string) => {
         return await Purchase.find({
             client: clientId,
             status: "inCart"
-        }).populate("product").populate("specification");
+        }).populate("product").populate("specification").lean();
     } catch (err) { return []; }
 };

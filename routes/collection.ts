@@ -1,5 +1,5 @@
 import express from 'express';
-import { addCollection_, deleteCollections_, getAllCollections_, getCollectionById_, getCollectionsByProduct_, getCollectionsInSideBar_, getHomeCollections_, getHomeCollectionsWithProducts_, getPublicCollections_, getSubCollections_, getTopCollections_, updateCollection_ } from '../midCondroller/collection.js';
+import { addCollection_, deleteCollections_, getAllCollections_, getCollectionById_, getCollectionsByCustomizableType_, getCollectionsByProduct_, getCollectionsInSideBar_, getHomeCollections_, getHomeCollectionsWithProducts_, getPublicCollections_, getSubCollections_, getTopCollections_, updateCollection_ } from '../midCondroller/collection.js';
 import { uploadCollectionMiddleware } from '../lib/multer.js';
 const router = express.Router();
 
@@ -8,6 +8,10 @@ router.post(
     uploadCollectionMiddleware,
     addCollection_
 );
+
+router.get('/getCollectionsByCustomizableType', async (req, res) => {
+    await getCollectionsByCustomizableType_(req, res);
+})
 
 router.get('/getSubCollections', async (req, res) => {
     await getSubCollections_(req, res);

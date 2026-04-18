@@ -35,3 +35,5 @@ export const numOfMessageToSummary = 10;
 // llama-3.3-70b-versatile, Best and recommended currently
 // llama-3.1-70b-versatile, Good tool support
 // mixtral-8x7b-32768, Supports tools
+
+//https://www.remove.bg/fr/api

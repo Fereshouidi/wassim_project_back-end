@@ -19,6 +19,7 @@ import AdminRoute from "./routes/admin.js";
 import AiRoute from "./routes/chat.js";
 import NotificationRoute from "./routes/notification.js";
 import { creteTheBigBossAdminIfNotExist } from './controller/admin.js';
+import { createDefaultCustomizerCollections } from './controller/collection.js';
 
 
 
@@ -82,8 +83,9 @@ console.log('hhhhh');
 
 try {
   await creteTheBigBossAdminIfNotExist();
+  await createDefaultCustomizerCollections();
 } catch (err) {
-  console.error("Failed to initialize admin:", err);
+  console.error("Failed to initialize collections/admin:", err);
 }
 
 console.log("aaaaaaaa");

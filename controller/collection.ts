@@ -269,3 +269,35 @@ export const getCollectionsByCustomizableType = async (type: "base" | "pendant")
         throw err;
     }
 }
+
+export const createDefaultCustomizerCollections = async () => {
+    try {
+        const basesExist = await Collection.findOne({ customizable: 'base' });
+        if (!basesExist) {
+            const basesCol = new Collection({
+                name: { fr: 'Bases', en: 'Bases' },
+                customizable: 'base',
+                type: 'public',
+                status: 'active',
+                display: 'horizontal'
+            });
+            await basesCol.save();
+            console.log("[Collection Init] Created 'Bases' collection.");
+        }
+
+        const charmsExist = await Collection.findOne({ customizable: 'pendant' });
+        if (!charmsExist) {
+            const charmsCol = new Collection({
+                name: { fr: 'Charms', en: 'Charms' },
+                customizable: 'pendant',
+                type: 'public',
+                status: 'active',
+                display: 'horizontal'
+            });
+            await charmsCol.save();
+            console.log("[Collection Init] Created 'Charms' collection.");
+        }
+    } catch (err) {
+        console.error("[Collection Init] Error creating default collections:", err);
+    }
+}

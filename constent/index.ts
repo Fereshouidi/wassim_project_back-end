@@ -24,7 +24,7 @@ export const databaseLink_demo = process.env.DATABASE_LINK_DEMO || "";
 export const databaseLink_real = process.env.DATABASE_LINK_REAL || "";
 
 // --- Logic ---
-export const databaseLink = databaseLink_real || "";
+export const databaseLink = databaseLink_demo || "";
 
 // Set active key (Setting Groq as default based on original code)
 export const activeAiApiKey = grokApiKey;

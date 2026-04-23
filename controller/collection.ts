@@ -5,6 +5,7 @@ import Collection from '../models/collection.js';
 import OwnerInfo from '../models/ownerInfo.js';
 import { getOwnerInfo } from './ownerInfo.js';
 import Product from '../models/product.js';
+import { deleteCloudinaryImages } from '../lib/cloudinary.js';
 
 export const addCollection = async (collectionData: CollectionType) => {
 
@@ -182,11 +183,60 @@ export const deleteCollections = async (collectionIds: string[], status: Collect
             throw new Error("Collection IDs list is required and cannot be empty");
         }
 
-        // Update the status for all matching collections
-        const result = await Collection.updateMany(
-            { _id: { $in: collectionIds } },
-            { $set: { status: status } }
-        );
+        // 1. Fetch collections to get image URLs (traces)
+        const collections = await Collection.find({ _id: { $in: collectionIds } }).lean();
+        if (collections.length === 0) return { deletedCount: 0 };
+
+        const imageUrlsSet = new Set<string>();
+        collections.forEach((c: any) => {
+            if (c.thumbNail) imageUrlsSet.add(c.thumbNail);
+        });
+        const imageUrls = Array.from(imageUrlsSet);
+
+        // 2. Delete images from Cloudinary
+        if (imageUrls.length > 0) {
+            await deleteCloudinaryImages(imageUrls);
+        }
+
+        // 3. Remove collection IDs from all products' collections arrays (traces)
+        const products = await Product.find({ collections: { $in: collectionIds } });
+        for (const product of products) {
+            if (product.collections) {
+                product.collections = product.collections.filter((id: any) => !collectionIds.includes(id.toString()));
+                await product.save({ validateBeforeSave: false });
+            }
+        }
+
+        // 4. Remove collection IDs from OwnerInfo lists (traces)
+        const ownerInfos = await OwnerInfo.find({});
+        for (const ownerInfo of ownerInfos) {
+            let modified = false;
+            
+            if (ownerInfo.homeCollections) {
+                const originalLength = ownerInfo.homeCollections.length;
+                ownerInfo.homeCollections = ownerInfo.homeCollections.filter((id: any) => !collectionIds.includes(id.toString()));
+                if (ownerInfo.homeCollections.length !== originalLength) modified = true;
+            }
+            
+            if (ownerInfo.topCollections) {
+                const originalLength = ownerInfo.topCollections.length;
+                ownerInfo.topCollections = ownerInfo.topCollections.filter((id: any) => !collectionIds.includes(id.toString()));
+                if (ownerInfo.topCollections.length !== originalLength) modified = true;
+            }
+            
+            if (ownerInfo.collectionsInSideBar) {
+                const originalLength = ownerInfo.collectionsInSideBar.length;
+                ownerInfo.collectionsInSideBar = ownerInfo.collectionsInSideBar.filter((id: any) => !collectionIds.includes(id.toString()));
+                if (ownerInfo.collectionsInSideBar.length !== originalLength) modified = true;
+            }
+            
+            if (modified) {
+                await ownerInfo.save({ validateBeforeSave: false });
+            }
+        }
+
+        // 5. Delete collections from DB
+        const result = await Collection.deleteMany({ _id: { $in: collectionIds } });
 
         return result;
     } catch (err: any) {

@@ -324,7 +324,7 @@ export const deleteCollections_ = async (req: express.Request, res: express.Resp
         const result = await deleteCollections(ids, status);
 
         return res.status(200).json({
-            message: `Successfully updated ${result.modifiedCount} collections status. ✅`,
+            message: `Successfully deleted ${result.deletedCount || 0} collections and their traces. ✅`,
             details: result
         });
     } catch (err: any) {

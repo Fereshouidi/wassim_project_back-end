@@ -145,7 +145,8 @@ export const addProduct_ = async (req: express.Request, res: express.Response) =
       },
       collections: safeParse(req.body.collections),
       specifications: finalSpecIds,
-      stock: Number(req.body.stock || 0)
+      stock: Number(req.body.stock || 0),
+      status: req.body.status || "active"
     };
 
     const newProduct = await Product.create(productData);

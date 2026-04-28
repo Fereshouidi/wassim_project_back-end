@@ -187,6 +187,12 @@ export const deleteCollections = async (collectionIds: string[], status: Collect
         const collections = await Collection.find({ _id: { $in: collectionIds } }).lean();
         if (collections.length === 0) return { deletedCount: 0 };
 
+        // 1.1 Check if any collection is protected (Bases or Charms)
+        const hasProtected = collections.some((c: any) => c.customizable === 'base' || c.customizable === 'pendant');
+        if (hasProtected) {
+            throw new Error("Protected collections (Bases or Charms) cannot be removed.");
+        }
+
         const imageUrlsSet = new Set<string>();
         collections.forEach((c: any) => {
             if (c.thumbNail) imageUrlsSet.add(c.thumbNail);
@@ -327,7 +333,7 @@ export const createDefaultCustomizerCollections = async () => {
             const basesCol = new Collection({
                 name: { fr: 'Bases', en: 'Bases' },
                 customizable: 'base',
-                type: 'public',
+                type: 'private',
                 status: 'active',
                 display: 'horizontal'
             });
@@ -340,7 +346,7 @@ export const createDefaultCustomizerCollections = async () => {
             const charmsCol = new Collection({
                 name: { fr: 'Charms', en: 'Charms' },
                 customizable: 'pendant',
-                type: 'public',
+                type: 'private',
                 status: 'active',
                 display: 'horizontal'
             });

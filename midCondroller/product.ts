@@ -118,10 +118,10 @@ export const addProduct_ = async (req: express.Request, res: express.Response) =
     let descriptionEn = req.body.descriptionFr || "";
 
     try {
-      if (req.body.nameFr) {
-        const resName = await translate(req.body.nameFr, { from: 'fr', to: 'en' }) as any;
-        nameEn = resName.text;
-      }
+      // if (req.body.nameFr) {
+      //   const resName = await translate(req.body.nameFr, { from: 'fr', to: 'en' }) as any;
+      //   nameEn = resName.text;
+      // }
       if (req.body.descriptionFr) {
         const resDesc = await translate(req.body.descriptionFr, { from: 'fr', to: 'en' }) as any;
         descriptionEn = resDesc.text;
@@ -202,7 +202,6 @@ export const getFavoriteProductsByClient_ = async (req: express.Request, res: ex
 
   try {
 
-    console.log("hh");
     
 
     const { clientId } = req.query;
@@ -384,10 +383,10 @@ export const updateProduct_ = async (req: express.Request, res: express.Response
     let nameEn = req.body.nameEn;
     let descriptionEn = req.body.descriptionEn;
 
-    if (!nameEn && nameFr) {
-      const translation = await translate(nameFr, { from: 'fr', to: 'en' }) as any;
-      nameEn = translation.text;
-    }
+    // if (!nameEn && nameFr) {
+    //   const translation = await translate(nameFr, { from: 'fr', to: 'en' }) as any;
+    //   nameEn = translation.text;
+    // }
 
     if (!descriptionEn && descriptionFr) {
       const translation = await translate(descriptionFr, { from: 'fr', to: 'en' }) as any;

@@ -335,7 +335,8 @@ export const createDefaultCustomizerCollections = async () => {
                 customizable: 'base',
                 type: 'private',
                 status: 'active',
-                display: 'horizontal'
+                display: 'horizontal',
+                special:true
             });
             await basesCol.save();
             console.log("[Collection Init] Created 'Bases' collection.");
@@ -348,7 +349,8 @@ export const createDefaultCustomizerCollections = async () => {
                 customizable: 'pendant',
                 type: 'private',
                 status: 'active',
-                display: 'horizontal'
+                display: 'horizontal',
+                special:true
             });
             await charmsCol.save();
             console.log("[Collection Init] Created 'Charms' collection.");

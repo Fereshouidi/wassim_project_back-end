@@ -37,6 +37,10 @@ const collectionSchema = new mongoose.Schema(
         type: String,
         enum: ["none", "base", "pendant"],
         default: "none"
+    },
+    special: {
+      type: Boolean,
+      default: false
     }
   },
   {

@@ -154,6 +154,8 @@ export const verificateAdmin_ = async (req: express.Request, res: express.Respon
         if (!owner.contact?.email || !owner.contact?.mailPassword || !admin?.email)
             throw "owner mail, mailPassword and adminEmail are required!";
 
+        console.log({ admin, owner });
+
         const verificationCode = await sendVerificationTokenByEmail(
             owner.contact?.email,
             admin.email,
@@ -191,6 +193,9 @@ export const validateAdmin_ = async (req: express.Request, res: express.Response
 export const updateAdmin_ = async (req: express.Request, res: express.Response) => {
     try {
         const { updatedRow, lang, currentAdminId } = req.body;
+
+        console.log({updatedRow, lang, currentAdminId});
+        
         
         if (!updatedRow._id) {
             return res.status(400).json({ message: "Admin ID is required" });
@@ -243,11 +248,13 @@ export const updateAdmin_ = async (req: express.Request, res: express.Response) 
         const emailChanged = updatedRow.email && updatedRow.email !== prevAdminData.email;
         const explicitlyUnverified = updatedRow.isVerified === false;
 
-        if (emailChanged || explicitlyUnverified) {
+        if (explicitlyUnverified) {
             const owner = await getOwnerInfo() as unknown as OwnerInfoType;
             const ownerEmail = owner.contact?.email ?? "";
             const ownerPass = owner.contact?.mailPassword ?? "";
 
+            console.log('aaaaaaaaaaaaaaaaaaaaaa');
+            
             // Send verification code
             const { code } = sendVerificationTokenByEmail(
                 ownerEmail,
@@ -256,6 +263,9 @@ export const updateAdmin_ = async (req: express.Request, res: express.Response) 
                 (lang === 'en' ? 'en' : 'fr'),
                 'admin'
             );
+
+                        console.log({code});
+
 
             // Update code in the object to be saved
             updateData.isVerified = false;

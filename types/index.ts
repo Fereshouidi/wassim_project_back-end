@@ -95,6 +95,7 @@ export interface CollectionType {
     type: "private" | "public"
     display: "vertical" | "horizontal",
     customizable?: "none" | "base" | "pendant"
+    special: boolean
 }
 
 export type FiltrationType = {

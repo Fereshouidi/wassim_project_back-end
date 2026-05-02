@@ -76,9 +76,7 @@ await conn();
 
 app.get("/", (req, res) => {
   res.send("Server is working!");
-  console.log("aaaaaaaaaaaaa");
 });
-console.log('hhhhh');
 
 
 try {

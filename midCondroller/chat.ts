@@ -162,8 +162,13 @@ export const getAnswerFromAi = async (req: express.Request, res: express.Respons
         return;
 
     } catch (err: any) {
-        console.log({ err });
-        res.status(500).json({ error: "Internal Server Error" });
+        console.error("Error in getAnswerFromAi:", err);
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Internal Server Error" });
+        } else {
+            res.write(`event: error\ndata: ${JSON.stringify({ error: err.message || "Internal Server Error" })}\n\n`);
+            res.end();
+        }
     }
 };
 

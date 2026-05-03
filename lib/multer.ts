@@ -27,7 +27,7 @@ export const handleProductImagesUpload = async (req: any) => {
         // 3. Return only new links as simple array of strings
         // No need to link specifications here as we'll link them in the Controller
         return {
-            thumbnail: thumbnail || req.body.thumbNail || null,
+            thumbnail: thumbnail || req.body.thumbnail || req.body.thumbNail || null,
             newUploadedUrls: uploadedUrls // Array of links only
         };
     } catch (error) {

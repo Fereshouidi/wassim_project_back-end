@@ -146,7 +146,8 @@ export const addProduct_ = async (req: express.Request, res: express.Response) =
       collections: safeParse(req.body.collections),
       specifications: finalSpecIds,
       stock: Number(req.body.stock || 0),
-      status: req.body.status || "active"
+      status: req.body.status || "active",
+      mainImageSource: req.body.mainImageSource || "thumbnail"
     };
 
     const newProduct = await Product.create(productData);
@@ -479,6 +480,7 @@ export const updateProduct_ = async (req: express.Request, res: express.Response
           specifications: finalSpecIds,
           collections: JSON.parse(req.body.collections || "[]"),
           status: req.body.status || "active",
+          mainImageSource: req.body.mainImageSource || "thumbnail",
         }
       },
       { new: true }

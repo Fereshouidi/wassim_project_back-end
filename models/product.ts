@@ -72,6 +72,11 @@ const productSchema = new mongoose.Schema(
       ref: "Specification",
       default: [],
     },
+    mainImageSource: {
+      type: String,
+      enum: ["thumbnail", "firstSpecification"],
+      default: "thumbnail",
+    },
   },
   {
     timestamps: true,

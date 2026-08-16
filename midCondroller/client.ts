@@ -132,7 +132,7 @@ export const getClientByToken_ = async (req: express.Request, res: express.Respo
             return res.status(400).json({ message: err.message });
         }
 
-        res.status(500).json({ message: "Internal Server Error" });
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 }
 

@@ -31,10 +31,12 @@ export const supportAgent = async (msgFrom: "user" | "assistant", msg: string, h
                     1. you will be talking to a client with this data : ${JSON.stringify(client)}.
                     2. If the user asks about the "shopping cart", "sidebar", or "theme", or wants to navigate to a specific page (like "home", "account", "profile", "collections", "contact"), use the 'controlUI' tool.
                     3. If the user wants to add or remove or edit an item in the cart, use the 'manageCart' tool immediately.
-                    4. If the user asks about "products, prices, availability, or search", use the 'searchProducts' tool immediately so the search expert can assist them.
-                    5. For navigation: use element: 'navigation' and state: '/path'. (e.g., '/', '/account', '/collections', '/pages/contactUs').
-                    6. **IMPORTANT:** When navigating to the search page for "all products", ALWAYS use this exact path: '/search?searchInput=&filter=%7B%22price%22%3A%7B%22from%22%3A0%2C%22to%22%3A10000%7D%2C%22collections%22%3A%5B%5D%2C%22colors%22%3A%5B%5D%2C%22types%22%3A%5B%5D%2C%22sizes%22%3A%5B%5D%2C%22sortBy%22%3A%22price%22%2C%22sortDirection%22%3A%22asc%22%2C%22activeLanguage%22%3A%22en%22%7D' (never use just '/search').
-                    
+                    4. if the user asks about orders (make new order, view orders, edit order, delete order), use the 'manageOrders' tool immediately.
+                    5. If the user asks about "products, prices, availability, or search", use the 'searchProducts' tool immediately so the search expert can assist them.
+                    6. For navigation: use element: 'navigation' and state: '/path'. (e.g., '/', '/account', '/collections', '/pages/contactUs').
+                    7. **IMPORTANT:** When navigating to the search page for "all products", ALWAYS use this exact path: '/search?searchInput=&filter=%7B%22price%22%3A%7B%22from%22%3A0%2C%22to%22%3A10000%7D%2C%22collections%22%3A%5B%5D%2C%22colors%22%3A%5B%5D%2C%22types%22%3A%5B%5D%2C%22sizes%22%3A%5B%5D%2C%22sortBy%22%3A%22price%22%2C%22sortDirection%22%3A%22asc%22%2C%22activeLanguage%22%3A%22en%22%7D' (never use just '/search').
+                    8. don't use any tool except (controlUI, manageCart, manageOrders, searchProducts).
+
                     this is more rules from the manager : ${managerRules ?? "there is no rules from the manager"}
                     this is a summary of the conversation so far : ${summary}
                 `

@@ -75,7 +75,7 @@ async function determineIntent(msg: string, history: any[]): Promise<string> {
 
                     RULES:
                     1. Use "SEARCH" if the user is looking for products, asking about prices, sizes, availability, or showing interest in buying (e.g., "how much", "do you have this", "show me more").
-                    2. Use "ORDERS" if the user is asking about their orders, delivery status, order history, or "where is my stuff".
+                    2. Use "ORDERS" if the user is asking about making orders or aboiut the status of their orders, order history, or "where is my stuff" etc... 
                     3. Use "SUPPORT" for general store info, location, payment methods, or help.
                     4. CRITICAL: If the user previously asked about a product and now says "and the blue one?" or "is it available?", it is still "SEARCH".
 

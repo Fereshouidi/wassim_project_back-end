@@ -1,5 +1,6 @@
 import Order from "../models/order.js";
 import { OrderType, OwnerInfoType } from "../types/index.js";
+import { updateClient } from "./client.js";
 import { createNotification } from "./notification.js";
 import { getPurchasesInCartByClient, setOrderToPurchase } from "./purchase.js";
 
@@ -48,6 +49,19 @@ export const checkout = async (clientId: string, orderData: Partial<OrderType>) 
         // 3. Link purchases to this order
         for (const item of cartItems) {
             await setOrderToPurchase(item._id.toString(), order._id.toString());
+        }
+
+        try {
+            await updateClient({
+                _id: clientId,
+                address: orderData.address,
+                email: orderData.email,
+                fullName: orderData.fullName,
+                phone: orderData.phone
+            });
+        } catch (updateErr: any) {
+            console.error("Error updating client info:", updateErr);
+            throw updateErr;
         }
 
         return order;

@@ -31,7 +31,7 @@ export const supportTools = [
        type: "function",
        function: {
          name: "manageOrders",
-         description: "Use this tool when the user asks about their orders, delivery status, or order history",
+         description: "Use this tool when the user asks about their orders, delivery status, order history, or to make a new order",
          parameters: {
            type: "object",
            properties: {},

@@ -28,7 +28,7 @@ try {
         .replace(/^["']|["']$/g, '')
         .replace(/\\n/g, '\n');
 
-      console.log({ projectId, clientEmail, privateKey });
+      // console.log({ projectId, clientEmail, privateKey });
 
 
       if (projectId && clientEmail && privateKey) {

@@ -43,7 +43,7 @@ export const OrderManagerAgent = async (msgFrom: "user" | "assistant", msg: stri
             5. If a user asks "where is my order?", call 'getOrdersByClient' first to find their latest order.
             6. Always be helpful and reassuring.
 
-            ${managerRules ? `Additional rules from the manager: ${managerRules}` : ""}
+            ${managerRules ? `Additional rules from the manager: ${managerRules}` : "there is no rules form the store manager!"}
             `
         },
         ...truncatedHistory,

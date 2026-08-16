@@ -12,7 +12,7 @@ export const grokApiKey = process.env.GROQ_API_KEY || "";
 // --- AI Models Configuration ---
 export let activeGeminiModel = "gemini-2.5-flash";
 export let activeOpenRouterModel = "google/gemini-3-pro-preview";
-export let activeGrokModel = "openai/gpt-oss-20b";
+export let activeGrokModel = "openai/gpt-oss-120b";
 
 export const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME || "";
 export const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY || "";
@@ -25,7 +25,7 @@ export const databaseLink_demo2 = process.env.DATABASE_LINK_DEMO2 || "";
 export const databaseLink_real = process.env.DATABASE_LINK_REAL || "";
 
 // --- Logic ---
-export const databaseLink = databaseLink_real || "";
+export const databaseLink = databaseLink_demo || "";
 
 // Set active key (Setting Groq as default based on original code)
 export const activeAiApiKey = grokApiKey;

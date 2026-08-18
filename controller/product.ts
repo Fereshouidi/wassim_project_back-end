@@ -205,6 +205,9 @@ export const getProductsBySearch = async (
   status: ProductStatus[] = ["active"]
 ) => {
   try {
+
+    console.log({searchText, limit, skip, filtration, status});
+    
     /**
      * 1. الأساس: حالة المنتج
      * تأكد أن Product 2 حالته "active" في قاعدة البيانات ليظهر هنا.
@@ -241,8 +244,8 @@ export const getProductsBySearch = async (
       const priceTo = Number(filtration.price.to);
       productConditions.push({
         price: {
-          $gte: isNaN(priceFrom) ? 0 : priceFrom,
-          $lte: (isNaN(priceTo) || priceTo === 0) ? 999999999 : priceTo,
+          $gte: priceFrom ? priceFrom : 0,
+          $lte: priceTo ? priceTo : 999999999,
         },
       });
     }
@@ -332,6 +335,9 @@ export const getProductsBySearch = async (
       Specification.distinct("size", { _id: { $in: allRelatedSpecIds }, size: { $exists: true, $ne: null } }),
       Specification.distinct("type", { _id: { $in: allRelatedSpecIds }, type: { $exists: true, $ne: null } }),
     ]);
+
+    // console.log({products});
+    
 
     return {
       products,

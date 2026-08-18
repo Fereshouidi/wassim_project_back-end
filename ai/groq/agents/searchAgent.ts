@@ -29,6 +29,7 @@ Rules:
 8. When showing products, ALWAYS include a link to the product page using this format: [Product Name](/product/id).
 9. **UI ACTION:** When you find products, always be helpful and say something like "Certainly! Here is what I found for you:" or "I've found these great results for you:".
 10. NEVER send JSON to the user.
+11. For deep searches, paginate like this: limit: 5, skip: 0 → limit: 10, skip: 5 → limit: 15, skip: 10 → continue increasing both by 5.
 
 Additional rules from the manager: ${managerRules ?? "None"}
 `;

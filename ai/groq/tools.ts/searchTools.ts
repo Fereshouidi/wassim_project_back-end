@@ -58,5 +58,22 @@ export const searchTools = [
         required: []
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "getProductDetails",
+      description: "Get the details of a specific product.",
+      parameters: {
+        type: "object",
+        properties: {
+          productId: {
+            type: "string",
+            description: "The ID of the product."
+          }
+        },
+        required: ["productId"]
+      }
+    }
   }
-];
+];

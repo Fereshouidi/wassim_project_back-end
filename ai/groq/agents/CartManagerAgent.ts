@@ -230,7 +230,7 @@ export const CartManagerAgent = async (msgFrom: "user" | "assistant", msg: strin
             model: activeGrokModel,
             messages: sanitizeMessages(messages),
             tool_choice: "auto",
-            temperature: 0.5
+            temperature: 0.1
         });
 
         const finalResMessage = finalResponse.choices[0].message;

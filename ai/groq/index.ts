@@ -86,6 +86,7 @@ async function determineIntent(msg: string, history: any[]): Promise<string> {
             ]),
             temperature: 0, // To ensure stability in response
             max_tokens: 5,
+            tool_choice: "auto",
         });
 
         const aiDecision = response.choices[0]?.message?.content?.trim().toUpperCase() || "SUPPORT";

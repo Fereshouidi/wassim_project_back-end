@@ -136,7 +136,7 @@ export const OrderManagerAgent = async (msgFrom: "user" | "assistant", msg: stri
         const finalResponse = await groq.chat.completions.create({
             model: activeGrokModel,
             messages: sanitizeMessages(messages),
-            temperature: 0.5
+            temperature: 0.1
         });
 
         return {

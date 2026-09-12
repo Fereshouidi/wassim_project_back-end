@@ -44,12 +44,15 @@ export const updatePurchase__ = async (req: express.Request, res: express.Respon
     try {
         const updatedData: PurchaseType = req.body;
 
-        if (!updatedData.client || !updatedData.product) {
-            return res.status(400).json({
-                error: true,
-                message: "Error: Both client and product are required!",
-            });
-        }
+        console.log({updatedData});
+        
+
+        // if (!updatedData.client || !updatedData.product) {
+        //     return res.status(400).json({
+        //         error: true,
+        //         message: "Error: Both client and product are required!",
+        //     });
+        // }
 
         let purchase;
         let isNew = false;
@@ -74,6 +77,7 @@ export const updatePurchase__ = async (req: express.Request, res: express.Respon
         });
 
     } catch (err: any) {
+        console.log({err});
         return res.status(500).json({ error: true, message: err.message });
     }
 };

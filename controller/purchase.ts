@@ -225,7 +225,8 @@ export const getPurchasesInCartByClient = async (clientId: string) => {
             .populate('specification')
             .populate({ path: "customizedCharms.charm", populate: { path: "specifications" } })
             .populate("customizedCharms.spec")
-            .lean();
+            .lean()
+            .sort({createdAt: -1});
 
         return purchases;
 

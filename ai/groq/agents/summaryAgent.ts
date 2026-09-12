@@ -41,7 +41,7 @@ export const summaryAgent = async (msg: string): Promise<string> => {
             ]),
             // Low temperature to ensure no hallucination and maintain technical accuracy
             temperature: 0.1,
-            max_tokens: 500 // سقف كافٍ جداً لملخص مركز
+            max_tokens: 500
         });
 
         // Return text directly as in previous version for easy handling in Controller

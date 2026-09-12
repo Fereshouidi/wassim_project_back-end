@@ -26,7 +26,7 @@ export const searchTools = [
           maxPrice: { type: "number", description: "Maximum price" },
           category: {
             type: "string",
-            description: "Category of products to search in (e.g., rings, watches, necklaces)."
+            description: "Category of products to search in (e.g., rings, watches, necklaces, promo)."
           },
           colors: {
             type: "array",

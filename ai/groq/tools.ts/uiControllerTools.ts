@@ -14,7 +14,7 @@ export const uiControllerTools = [
           },
           state: {
             type: "string",
-            description: "الحالة المطلوبة. في حال كانت element هي navigation، ضع المسار هنا (مثل '/', '/account', '/collections')"
+            description: "الحالة المطلوبة. في حال كانت element هي navigation، ضع المسار هنا (مثل '/', '/account', '/collections', '/make-your-own')"
           }
         },
         required: ["element", "state"]
